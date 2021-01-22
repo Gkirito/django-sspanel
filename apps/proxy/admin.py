@@ -1,19 +1,40 @@
+import json
+
 from django.conf import settings
 from django.contrib import admin
+from django.db.models import JSONField
 from django.forms import ModelForm
 
 from apps.proxy import models
 from apps.sspanel.models import User
+from apps.utils import JsonEditorWidget
 
 
 class SSConfigInline(admin.StackedInline):
     model = models.SSConfig
     verbose_name = "SS配置"
+    extra = 0
     fields = [
         "proxy_node",
         "method",
         "multi_user_port",
     ]
+
+
+class TrojanConfigInline(admin.StackedInline):
+    formfield_overrides = {
+        JSONField: {'widget': JsonEditorWidget}
+    }
+    model = models.TrojanConfig
+    fields = ["proxy_node", "config"]
+    extra = 0
+    verbose_name = "Trojan配置"
+
+    class Media:
+        css = {
+            'all': ('https://cdn.bootcdn.net/ajax/libs/jsoneditor/9.1.5/jsoneditor.min.css',)
+        }
+        js = ('https://cdn.bootcdn.net/ajax/libs/jsoneditor/9.1.5/jsoneditor-minimalist.js',)
 
 
 class RelayRuleInline(admin.TabularInline):
@@ -28,18 +49,18 @@ class ProxyNodeAdminForm(ModelForm):
         if "instance" in kwargs and kwargs["instance"]:
             # NOTE trans model traffic to GB
             kwargs["instance"].total_traffic = (
-                kwargs["instance"].total_traffic // settings.GB
+                    kwargs["instance"].total_traffic // settings.GB
             )
             kwargs["instance"].used_traffic = (
-                kwargs["instance"].used_traffic // settings.GB
+                    kwargs["instance"].used_traffic // settings.GB
             )
 
         super(ProxyNodeAdminForm, self).__init__(*args, **kwargs)
         self.fields["used_traffic"].help_text = (
-            self.fields["used_traffic"].help_text + "单位GB"
+                self.fields["used_traffic"].help_text + "单位GB"
         )
         self.fields["total_traffic"].help_text = (
-            self.fields["total_traffic"].help_text + "单位GB"
+                self.fields["total_traffic"].help_text + "单位GB"
         )
 
     def clean_used_traffic(self):
@@ -64,7 +85,7 @@ class ProxyNodeAdmin(admin.ModelAdmin):
         "sequence",
     ]
     inlines = [RelayRuleInline]
-    all_inlines = [SSConfigInline, RelayRuleInline]
+    all_inlines = [SSConfigInline, RelayRuleInline, TrojanConfigInline]
     list_editable = ["sequence"]
 
     def get_inlines(self, request, instance):
@@ -72,12 +93,20 @@ class ProxyNodeAdmin(admin.ModelAdmin):
             return self.all_inlines
         elif instance.node_type == models.ProxyNode.NODE_TYPE_SS:
             return [SSConfigInline] + self.inlines
+        elif instance.node_type == models.ProxyNode.NODE_TYPE_TROJAN:
+            return [TrojanConfigInline] + self.inlines
         return self.inlines
 
     def traffic(self, instance):
         return f"{instance.human_used_traffic}/{instance.human_total_traffic}"
 
     traffic.short_description = "流量"
+    class Media:
+        css = {
+            'all': ('https://cdn.bootcdn.net/ajax/libs/jsoneditor/9.1.5/jsoneditor.min.css',)
+        }
+        js = ('https://cdn.bootcdn.net/ajax/libs/jsoneditor/9.1.5/jsoneditor-minimalist.js',)
+
 
 
 class RelayNodeAdmin(admin.ModelAdmin):
@@ -112,7 +141,6 @@ class RelayRuleAdmin(admin.ModelAdmin):
 
 
 class SSConfigAdmin(admin.ModelAdmin):
-
     list_display = [
         "proxy_node",
         "method",
@@ -171,6 +199,20 @@ class UserOnLineIpLogAdmin(admin.ModelAdmin):
     show_full_result_count = False
 
 
+class TrojanConfigAdmin(admin.ModelAdmin):
+    list_display = [
+        "proxy_node"
+    ]
+    formfield_overrides = {
+        JSONField: {'widget': JsonEditorWidget}
+    }
+    class Media:
+        css = {
+            'all': ('https://cdn.bootcdn.net/ajax/libs/jsoneditor/9.1.5/jsoneditor.min.css',)
+        }
+        js = ('https://cdn.bootcdn.net/ajax/libs/jsoneditor/9.1.5/jsoneditor-minimalist.js',)
+
+
 # Register your models here.
 admin.site.register(models.ProxyNode, ProxyNodeAdmin)
 admin.site.register(models.SSConfig, SSConfigAdmin)
@@ -181,3 +223,5 @@ admin.site.register(models.RelayRule, RelayRuleAdmin)
 admin.site.register(models.NodeOnlineLog, NodeOnlineLogAdmin)
 admin.site.register(models.UserTrafficLog, UserTrafficLogAdmin)
 admin.site.register(models.UserOnLineIpLog, UserOnLineIpLogAdmin)
+
+admin.site.register(models.TrojanConfig, TrojanConfigAdmin)

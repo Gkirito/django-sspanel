@@ -7,6 +7,7 @@ from urllib.parse import quote, urlencode
 import pendulum
 from django.conf import settings
 from django.db import models
+from django.db.models import JSONField
 from django.forms.models import model_to_dict
 
 from apps import constants as c
@@ -14,6 +15,7 @@ from apps import utils
 from apps.ext import cache
 from apps.mixin import BaseLogModel, BaseModel, CacheMixin, SequenceMixin
 from apps.sspanel.models import User
+from apps.utils import get_default_trojan_config
 
 
 class BaseNodeModel(BaseModel):
@@ -81,8 +83,8 @@ class ProxyNode(BaseNodeModel, SequenceMixin, CacheMixin):
             query = query.filter(level__lte=level)
         active_nodes = list(
             query.select_related("ss_config")
-            .prefetch_related("relay_rules")
-            .order_by("sequence")
+                .prefetch_related("relay_rules")
+                .order_by("sequence")
         )
         return active_nodes
 
@@ -102,15 +104,15 @@ class ProxyNode(BaseNodeModel, SequenceMixin, CacheMixin):
         configs = {"users": []}
         ss_config = self.ss_config
         for user in User.objects.filter(level__gte=self.level).values(
-            "id",
-            "ss_port",
-            "ss_password",
-            "total_traffic",
-            "upload_traffic",
-            "download_traffic",
+                "id",
+                "ss_port",
+                "ss_password",
+                "total_traffic",
+                "upload_traffic",
+                "download_traffic",
         ):
             enable = self.enable and user["total_traffic"] > (
-                user["download_traffic"] + user["upload_traffic"]
+                    user["download_traffic"] + user["upload_traffic"]
             )
             if ss_config.multi_user_port:
                 # NOTE 单端口多用户
@@ -278,7 +280,6 @@ class SSConfig(models.Model):
 
 
 class RelayNode(BaseNodeModel):
-
     CMCC = "移动"
     CUCC = "联通"
     CTCC = "电信"
@@ -335,7 +336,6 @@ class RelayNode(BaseNodeModel):
 
 
 class RelayRule(BaseModel):
-
     proxy_node = models.ForeignKey(
         ProxyNode,
         on_delete=models.CASCADE,
@@ -388,7 +388,6 @@ class RelayRule(BaseModel):
 
 
 class NodeOnlineLog(BaseLogModel):
-
     proxy_node = models.ForeignKey(
         ProxyNode,
         on_delete=models.CASCADE,
@@ -439,13 +438,12 @@ class NodeOnlineLog(BaseLogModel):
     @property
     def online(self):
         return (
-            utils.get_current_datetime().subtract(seconds=c.NODE_TIME_OUT)
-            < self.created_at
+                utils.get_current_datetime().subtract(seconds=c.NODE_TIME_OUT)
+                < self.created_at
         )
 
 
 class UserTrafficLog(BaseLogModel):
-
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="用户")
     proxy_node = models.ForeignKey(
         ProxyNode,
@@ -479,8 +477,8 @@ class UserTrafficLog(BaseLogModel):
     def _get_active_user_count_by_datetime(cls, dt: pendulum.DateTime):
         qs = (
             cls.objects.filter(created_at__range=[dt.start_of("day"), dt.end_of("day")])
-            .values("user_id")
-            .distinct()
+                .values("user_id")
+                .distinct()
         )
         return qs.count()
 
@@ -511,7 +509,7 @@ class UserTrafficLog(BaseLogModel):
 
     @classmethod
     def calc_traffic_by_datetime(
-        cls, dt: pendulum.DateTime, user_id=None, proxy_node=None
+            cls, dt: pendulum.DateTime, user_id=None, proxy_node=None
     ):
         """获取指定日期指定用户的流量,只有今天的数据会hit db"""
         if dt.date() == utils.get_current_datetime().date():
@@ -576,3 +574,23 @@ class UserOnLineIpLog(BaseLogModel):
         ).values("ip"):
             ips.add(data["ip"])
         return len(ips)
+
+
+class TrojanConfig(models.Model):
+    proxy_node = models.OneToOneField(
+        to=ProxyNode,
+        related_name="trojan_config",
+        on_delete=models.CASCADE,
+        primary_key=True,
+        help_text="代理节点",
+        verbose_name="代理节点",
+    )
+
+    config = JSONField('配置', default=get_default_trojan_config)
+
+    class Meta:
+        verbose_name = "Trojan配置"
+        verbose_name_plural = "Trojan配置"
+
+    def __str__(self) -> str:
+        return self.proxy_node.__str__() + "-配置"

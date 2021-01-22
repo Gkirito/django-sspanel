@@ -13,6 +13,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django_prometheus",
+    'django_admin_json_editor',
     "anymail",
     "apps.sspanel",
     "apps.proxy",

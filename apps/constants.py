@@ -84,3 +84,99 @@ CACHE_TTL_HOUR = 60 * 60
 CACHE_TTL_DAY = CACHE_TTL_HOUR * 24
 CACHE_TTL_WEEK = CACHE_TTL_DAY * 7
 CACHE_TTL_MONTH = CACHE_TTL_DAY * 31
+
+
+DEFAULT_TROJAN_CONFIG = {
+    "stats": {},
+    "api": {
+        "tag": "api",
+        "services": [
+            "HandlerService",
+            "StatsService"
+        ]
+    },
+    "log": {
+        "loglevel": "info"
+    },
+    "policy": {
+        "system": {
+            "statsInboundUplink": True,
+            "statsInboundDownlink": True
+        },
+        "levels": {
+            "1": {
+                "statsUserUplink": True,
+                "statsUserDownlink": True
+            }
+        }
+    },
+    "inbounds": [
+        {
+            "port": 10086,
+            "protocol": "trojan",
+            "listen": "0.0.0.0",
+            "tag": "proxy",
+            "settings": {
+                "clients": [],
+                "fallbacks": [
+                    {
+                        "alpn": "",
+                        "dest": "172.17.0.1:8001",
+                        "path": "",
+                        "xver": 1
+                    },
+                    {
+                        "alpn": "h2",
+                        "dest": "172.17.0.1:8443",
+                        "path": "",
+                        "xver": 1
+                    }
+                ]
+            },
+            "streamSettings": {
+                "network": "tcp",
+                "security": "tls",
+                "tlsSettings": {
+                    "alpn": [
+                        "http/1.1"
+                    ],
+                    "certificates": [
+                        {
+                            "certificateFile": "/etc/letsencrypt/live/www.gkirito.com/fullchain.pem",
+                            "keyFile": "/etc/letsencrypt/live/www.gkirito.com/privkey.pem"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "listen": "0.0.0.0",
+            "port": "8080",
+            "protocol": "dokodemo-door",
+            "settings": {
+                "address": "0.0.0.0"
+            },
+            "tag": "api"
+        }
+    ],
+    "outbounds": [
+        {
+            "protocol": "freedom",
+            "settings": {}
+        }
+    ],
+    "routing": {
+        "settings": {
+            "rules": [
+                {
+                    "inboundTag": [
+                        "api"
+                    ],
+                    "outboundTag": "api",
+                    "type": "field"
+                }
+            ]
+        },
+        "strategy": "rules"
+    }
+}
