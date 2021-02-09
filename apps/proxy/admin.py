@@ -71,6 +71,12 @@ class ProxyNodeAdminForm(ModelForm):
         total_traffic = self.cleaned_data.get("total_traffic")
         return total_traffic * settings.GB
 
+    class Media:
+        js = (
+            'https://cdn.bootcdn.net/ajax/libs/jquery/3.5.1/jquery.min.js',
+            'js/addProxy.js',
+              )
+
 
 class ProxyNodeAdmin(admin.ModelAdmin):
     form = ProxyNodeAdminForm
