@@ -5,6 +5,7 @@ on:
       - build
       - master
       - dev
+      - test/gkirito/ci/support-multi-platforms
     paths:
       - "pyproject.toml"
       - "deploy/Dockerfile.RUNTIME"
