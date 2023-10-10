@@ -31,7 +31,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ehco1996/django-sspanel:runtime
+          tags: gkirito/django-sspanel:runtime
           file: deploy/Dockerfile.RUNTIME
           platforms: linux/amd64,linux/arm64
 
@@ -39,6 +39,6 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: ehco1996/django-sspanel:nginx
+          tags: gkirito/django-sspanel:nginx
           file: deploy/Dockerfile.NGINX
           platforms: linux/amd64,linux/arm64
