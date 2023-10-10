@@ -32,7 +32,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: "ehco1996/django-sspanel:latest,ehco1996/django-sspanel:code,ehco1996/django-sspanel:${{ github.sha }}"
+          tags: "gkirito/django-sspanel:latest,gkirito/django-sspanel:code,gkirito/django-sspanel:${{ github.sha }}"
           platforms: linux/amd64,linux/arm64
           file: deploy/Dockerfile.CODE
 
