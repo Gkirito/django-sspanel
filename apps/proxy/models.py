@@ -52,10 +52,46 @@ class XRayTemplates:
                 "tag": "api",
             },
         ],
-        "outbounds": [{"tag": "direct", "protocol": "freedom", "settings": {}}],
+        "outbounds": [
+            {"tag": "direct", "protocol": "freedom", "settings": {}},
+            {
+                "tag": "warp",
+                "protocol": "socks",
+                "settings": {
+                    "servers": [
+                        {
+                            "address": "127.0.0.1",
+                            "port": 40000
+                        }
+                    ]
+                }
+            }
+        ],
         "routing": {
             "settings": {
                 "rules": [
+                    {
+                        "type": "field",
+                        "outboundTag": "warp",
+                        "domain": [
+                            "chat.openai.com",
+                            "openai.com",
+                            "static.cloudflareinsights.com",
+                            "ai.com",
+                            "algolia.net",
+                            "api.statsig.com",
+                            "auth0.com",
+                            "client-api.arkoselabs.com",
+                            "events.statsigapi.net",
+                            "oaistatic.com",
+                            "oaiusercontent.com",
+                            "observeit.net",
+                            "poe.com",
+                            "segment.io",
+                            "sentry.io",
+                            "stripe.com"
+                        ]
+                    },
                     {
                         "type": "field",
                         "inboundTag": [XRayTags.APITag],
@@ -283,14 +319,14 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
         configs.update(self.get_ehco_server_config())
 
         for user in User.objects.filter(level__gte=self.level).values(
-            "id",
-            "proxy_password",
-            "total_traffic",
-            "upload_traffic",
-            "download_traffic",
+                "id",
+                "proxy_password",
+                "total_traffic",
+                "upload_traffic",
+                "download_traffic",
         ):
             enable = self.enable and user["total_traffic"] > (
-                user["download_traffic"] + user["upload_traffic"]
+                    user["download_traffic"] + user["upload_traffic"]
             )
 
             configs["users"].append(
@@ -323,14 +359,14 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
         configs.update(self.get_ehco_server_config())
 
         for user in User.objects.filter(level__gte=self.level).values(
-            "id",
-            "proxy_password",
-            "total_traffic",
-            "upload_traffic",
-            "download_traffic",
+                "id",
+                "proxy_password",
+                "total_traffic",
+                "upload_traffic",
+                "download_traffic",
         ):
             enable = self.enable and user["total_traffic"] > (
-                user["download_traffic"] + user["upload_traffic"]
+                    user["download_traffic"] + user["upload_traffic"]
             )
             configs["users"].append(
                 {
@@ -788,7 +824,7 @@ class UserTrafficLog(BaseLogModel):
 
     @classmethod
     def calc_traffic_by_datetime(
-        cls, dt: pendulum.DateTime, user_id=None, proxy_node=None
+            cls, dt: pendulum.DateTime, user_id=None, proxy_node=None
     ):
         """获取指定日期指定用户的流量,只有今天的数据会hit db"""
         if dt.date() == utils.get_current_datetime().date():
