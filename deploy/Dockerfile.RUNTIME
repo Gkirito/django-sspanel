@@ -1,6 +1,6 @@
 # FROM ehco1996/django-sspanel:runtime as base
 # NOTE comment the before line and  uncomment the next line only when bump python version
-FROM python:3.11-bullseye as base
+FROM python:3.11-bullseye AS base
 
 LABEL Name=django-sspanel
 
@@ -10,6 +10,6 @@ COPY pyproject.toml poetry.lock /tmp/
 RUN pip install --upgrade pip  \
     && pip install --no-cache-dir poetry \
     && poetry config virtualenvs.create false \
-    && poetry install --no-dev --no-interaction --no-ansi
+    && poetry install --no-interaction --no-ansi
 
 ENV DJANGO_ENV=ci
