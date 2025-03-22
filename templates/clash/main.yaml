@@ -13,6 +13,7 @@ proxy-groups:
       - HK-LB
       - JP-LB
       - US-LB
+      - TW-LB
     use:
       - {{ provider_name }}-all
 
@@ -20,6 +21,13 @@ proxy-groups:
     type: load-balance
     strategy: consistent-hashing
     filter: "香港|hk|HK"
+    use:
+      - {{ provider_name }}-all
+  
+  - name: TW-LB
+    type: load-balance
+    strategy: consistent-hashing
+    filter: "台湾|tw|TW"
     use:
       - {{ provider_name }}-all
 
