@@ -76,7 +76,7 @@ TIME_ZONE = "Asia/Shanghai"
 SESSION_COOKIE_AGE = 60 * 60 * 24  # 一天
 SESSION_SAVE_EVERY_REQUEST = True
 
-STATIC_URL = "/static/"
+STATIC_URL = "https://static.safetunnel.work/static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "static/")
 
 MEDIA_ROOT = os.path.join(BASE_DIR, "media/")
