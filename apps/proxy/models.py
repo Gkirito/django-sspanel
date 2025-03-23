@@ -353,8 +353,10 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
                         "listen": f"{self.ehco_listen_host}:{self.ehco_listen_port}",
                         "listen_type": self.ehco_listen_type,
                         "transport_type": self.ehco_transport_type,
-                        "tcp_remotes": tcp_remotes,
                         "remotes": tcp_remotes,
+                        "options": {
+                            "enable_udp": self.enable_udp,
+                        }
                     }
                 ],
             }
