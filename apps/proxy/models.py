@@ -713,6 +713,7 @@ class RelayNode(BaseNodeModel):
                 "options": {
                     "enable_multipath_tcp": True,
                     "enable_udp": rule.enable_udp and proxy_node.enable_udp,
+                    "idle_timeout_sec": 60,
                 },
             }
             relay_configs.append(rule_cfg)
