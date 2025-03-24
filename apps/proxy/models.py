@@ -355,6 +355,7 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
                         "transport_type": self.ehco_transport_type,
                         "remotes": tcp_remotes,
                         "options": {
+                            "idle_timeout_sec": 60,
                             "enable_udp": self.enable_udp,
                         }
                     }
