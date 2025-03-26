@@ -712,7 +712,7 @@ class RelayNode(BaseNodeModel):
                 "transport_type": rule.transport_type,
                 "remotes": remotes,
                 "options": {
-                    "enable_multipath_tcp": True,
+                    "enable_multipath_tcp": False,
                     "enable_udp": rule.enable_udp and proxy_node.enable_udp,
                     "idle_timeout_sec": 60,
                 },
