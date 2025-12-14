@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib import admin, messages
 from django.db.models import F
+from django.utils.html import escape
 from django.utils.safestring import mark_safe
 
 from apps import utils
@@ -148,6 +149,8 @@ class ProxyNodeAdmin(admin.ModelAdmin):
             return [SSConfigInline] + self.inlines
         elif instance.node_type == models.ProxyNode.NODE_TYPE_TROJAN:
             return [TrojanConfigInline] + self.inlines
+        elif instance.node_type == models.ProxyNode.NODE_TYPE_HYSTERIA:
+            return [HysteriaConfigInline] + self.inlines
         return self.inlines
 
     @admin.display(description="等级/中转数量/在线")
@@ -165,8 +168,16 @@ class ProxyNodeAdmin(admin.ModelAdmin):
 
     @admin.display(description="对接地址")
     def api_endpoint(self, instance):
+        endpoint = instance.api_endpoint or ""
         div = f"""
-        <input readonly class="el-input" value="bash <(curl -fsSL https://get.ehco-relay.cc) -i --config '{instance.api_endpoint}'">
+        <input
+            readonly
+            class="el-input"
+            value="{escape(endpoint)}"
+            onclick="navigator.clipboard.writeText(this.value);this.select();"
+            title="点击复制"
+            style="cursor: pointer;"
+        >
         """
         return mark_safe(div)
 

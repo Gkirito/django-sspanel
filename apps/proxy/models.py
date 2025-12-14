@@ -584,7 +584,8 @@ class SSConfig(models.Model, resetPortMixin):
         verbose_name_plural = "SS配置"
 
     def __str__(self) -> str:
-        return f"{self.proxy_node.__str__()}-配置"
+        node = getattr(self, "proxy_node", None)
+        return f"{node}-配置" if node else f"proxy-{self.proxy_node_id}-配置"
 
     def to_node_config(self, node: ProxyNode):
         xray_config = XRayTemplates.gen_base_config(
