@@ -467,6 +467,8 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
             return self.ss_config.reset_random_multi_user_port()
         elif self.node_type == self.NODE_TYPE_TROJAN:
             return self.trojan_config.reset_random_multi_user_port()
+        elif self.node_type == self.NODE_TYPE_HYSTERIA:
+            return self.hysteria_config.reset_random_multi_user_port()
 
     @property
     def human_total_traffic(self):
@@ -543,6 +545,11 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
             new_node.trojan_config.id = None
             new_node.trojan_config.proxy_node = new_node
             new_node.trojan_config.save()
+        elif self.node_type == self.NODE_TYPE_HYSTERIA:
+            new_node.hysteria_config = deepcopy(self.hysteria_config)
+            new_node.hysteria_config.id = None
+            new_node.hysteria_config.proxy_node = new_node
+            new_node.hysteria_config.save()
 
         occupancy_config = OccupancyConfig.objects.filter(proxy_node=self).first()
         if occupancy_config:
