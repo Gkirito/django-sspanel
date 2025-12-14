@@ -1,6 +1,7 @@
 import base64
 import json
 import random
+import time
 from copy import deepcopy
 from datetime import timedelta
 from decimal import Decimal
@@ -28,6 +29,26 @@ class XRayTags:
     VmessProxyTag = "vmess_proxy"
     VlessProxyTag = "vless_proxy"
 
+
+# Use Python's time module to derive nanoseconds per second for hysteria configs.
+NANOSECONDS_PER_SECOND = round(time.monotonic_ns() / time.monotonic())
+
+
+class HysteriaTemplates:
+    DEFAULT_CONFIG = {
+        "listen": ":",
+        "ignoreClientBandwidth": False, 
+        "speedTest": False,
+        "disableUDP": False,
+        "udpIdleTimeout": 60 * NANOSECONDS_PER_SECOND,
+    }
+
+    @classmethod
+    def gen_base_config(cls, port, enable_udp=False):
+        hysteria_config = deepcopy(HysteriaTemplates.DEFAULT_CONFIG)
+        hysteria_config["listen"] += str(port)
+        hysteria_config["disableUDP"] = not enable_udp
+        return hysteria_config
 
 class XRayTemplates:
     DEFAULT_CONFIG = {
@@ -173,15 +194,18 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
     NODE_TYPE_SSR = "ssr"
     NODE_TYPE_VMESS = "vmess"
     NODE_TYPE_VLESS = "vless"
+    NODE_TYPE_HYSTERIA = "hysteria2"
     NODE_TYPE_SET = {
         NODE_TYPE_SS,
         NODE_TYPE_TROJAN,
         NODE_TYPE_SSR,
         NODE_TYPE_VMESS,
         NODE_TYPE_VLESS,
+        NODE_TYPE_HYSTERIA
     }
     NODE_CHOICES = (
         (NODE_TYPE_SS, NODE_TYPE_SS),
+        (NODE_TYPE_HYSTERIA,NODE_TYPE_HYSTERIA),
         (NODE_TYPE_TROJAN, NODE_TYPE_TROJAN),
         (NODE_TYPE_SSR, NODE_TYPE_SSR),
         (NODE_TYPE_VMESS, NODE_TYPE_VMESS),
@@ -265,7 +289,7 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
     def get_active_nodes(cls):
         query = cls.objects.filter(enable=True)
         return (
-            query.select_related("ss_config", "trojan_config")
+            query.select_related("ss_config", "trojan_config", "hysteria_config")
             .prefetch_related("relay_rules")
             .order_by("sequence")
         )
@@ -331,6 +355,8 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
             proxy_cfg = self.ss_config
         elif self.node_type == self.NODE_TYPE_TROJAN:
             proxy_cfg = self.trojan_config
+        elif self.node_type == self.NODE_TYPE_HYSTERIA:
+            proxy_cfg = self.hysteria_config
         else:
             raise Exception("not support node type")
 
@@ -368,6 +394,8 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
             return self.ss_config.multi_user_port
         elif self.node_type == self.NODE_TYPE_TROJAN:
             return self.trojan_config.multi_user_port
+        elif self.node_type == self.NODE_TYPE_HYSTERIA:
+            return self.hysteria_config.multi_user_port
 
     def get_user_shadowrocket_sub_link(self, user, relay_rule=None):
         if relay_rule:
@@ -386,6 +414,9 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
         elif self.node_type == self.NODE_TYPE_TROJAN:
             code = f"{user.proxy_password}@{host}:{port}?allowInsecure=1&udp={udp}"
             b64_code = code  # trojan don't need base64 encode
+        elif self.node_type == self.NODE_TYPE_HYSTERIA:
+            code = f"{user.proxy_password}@{host}:{port}?insecure=1&mport={self.hysteria_config.port_hop_min}-{self.hysteria_config.port_hop_max}"
+            b64_code = code  # hysteria don't need base64 encode
         return f"{self.node_type}://{b64_code}#{quote(remark)}"
 
     def get_user_clash_config(self, user, relay_rule=None):
@@ -411,6 +442,9 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
         if self.node_type == self.NODE_TYPE_SS:
             config["cipher"] = self.ss_config.method
         if self.node_type == self.NODE_TYPE_TROJAN:
+            config["skip-cert-verify"] = True
+        if self.node_type == self.NODE_TYPE_HYSTERIA:
+            config["ports"] = f"{self.hysteria_config.port_hop_min}-{self.hysteria_config.port_hop_max}"
             config["skip-cert-verify"] = True
 
         return json.dumps(config, ensure_ascii=False)
@@ -567,6 +601,7 @@ class SSConfig(models.Model, resetPortMixin):
         configs = {
             "xray_config": xray_config,
             "sync_traffic_endpoint": node.api_endpoint,
+            "log_level": node.ehco_log_level,
         }
         configs.update(node.get_ehco_server_config())
         return configs
@@ -590,6 +625,61 @@ class SSConfig(models.Model, resetPortMixin):
         }
 
 
+class HysteriaConfig(models.Model, resetPortMixin):
+    proxy_node = models.OneToOneField(
+        to=ProxyNode,
+        related_name="hysteria_config",
+        on_delete=models.CASCADE,
+        primary_key=True,
+        help_text="代理节点",
+        verbose_name="代理节点",
+    )
+    port_hop_min = models.IntegerField("端口跳跃最小值", default=0)    
+    port_hop_max = models.IntegerField("端口跳跃最大值", default=0)
+    port_hop_interval = models.IntegerField("端口跳跃间隔(秒)", default=60)
+    multi_user_port = models.IntegerField(
+        "多用户端口", help_text="单端口多用户端口", null=True, blank=True
+    )
+
+    class Meta:
+        verbose_name = "Hysteria配置"
+        verbose_name_plural = "Hysteria配置"
+
+    def __str__(self) -> str:
+        return f"{self.proxy_node.__str__()}-配置"
+
+    def to_node_config(self, node: ProxyNode):
+        hysteria_config = HysteriaTemplates.gen_base_config(
+            self.multi_user_port,
+            node.enable_udp,
+        )
+        configs = {
+            "users": [],
+            "hysteria_config": hysteria_config,
+            "sync_traffic_endpoint": node.api_endpoint,
+            "log_level": node.ehco_log_level,
+        }
+        configs.update(node.get_ehco_server_config())
+        return configs
+
+    def to_user_config(self, node: ProxyNode, user: User):
+        have_shared_traffic = user.total_traffic > (
+            user.download_traffic + user.upload_traffic
+        )
+        have_oc_traffic = False
+        if node.have_oc_users:
+            oc = UserProxyNodeOccupancy.get_by_proxy_node_and_user(node, user)
+            if oc:
+                have_oc_traffic = not oc.out_of_usage()
+        enable = node.enable and (have_shared_traffic or have_oc_traffic)
+
+        return {
+            "user_id": user.id,
+            "password": user.proxy_password,
+            "enable": enable,
+            "protocol": ProxyNode.NODE_TYPE_HYSTERIA,
+        }
+        
 class TrojanConfig(models.Model, resetPortMixin):
     proxy_node = models.OneToOneField(
         to=ProxyNode,
@@ -627,6 +717,7 @@ class TrojanConfig(models.Model, resetPortMixin):
             "users": [],
             "xray_config": xray_config,
             "sync_traffic_endpoint": node.api_endpoint,
+            "log_level": node.ehco_log_level,
         }
         configs.update(node.get_ehco_server_config())
         return configs

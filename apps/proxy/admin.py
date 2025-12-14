@@ -23,10 +23,16 @@ class TrojanConfigInline(admin.StackedInline):
     model = models.TrojanConfig
     verbose_name = "Trojan配置"
     fields = ["proxy_node", "multi_user_port", "fallback_addr"]
-
+    
+class HysteriaConfigInline(admin.StackedInline):
+    model = models.HysteriaConfig
+    verbose_name = "Hysteria配置"
+    fields = ["proxy_node", "multi_user_port", "port_hop_min", "port_hop_max","port_hop_interval"]
+ 
 
 class OccupancyConfigInline(admin.StackedInline):
     model = models.OccupancyConfig
+    
     verbose_name = "占用配置"
     fields = [
         "proxy_node",
@@ -66,6 +72,7 @@ class ProxyNodeAdmin(admin.ModelAdmin):
     ]
     inlines = [OccupancyConfigInline]
     all_inlines = [
+        HysteriaConfigInline,
         TrojanConfigInline,
         SSConfigInline,
         OccupancyConfigInline,
