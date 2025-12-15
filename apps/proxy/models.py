@@ -55,6 +55,7 @@ class XRayTemplates:
         "stats": {},
         "api": {
             "tag": XRayTags.APITag,
+            "listen": "127.0.0.1",
             "services": ["StatsService", "HandlerService"],
         },
         "log": {"loglevel": "error"},
@@ -68,26 +69,8 @@ class XRayTemplates:
             },
         },
         "inbounds": [
-            {
-                "listen": "127.0.0.1",
-                "port": 23456,
-                "protocol": "dokodemo-door",
-                "settings": {"address": "127.0.0.1"},
-                "tag": "api",
-            },
         ],
         "outbounds": [{"tag": "direct", "protocol": "freedom", "settings": {}}],
-        "routing": {
-            "settings": {
-                "rules": [
-                    {
-                        "type": "field",
-                        "inboundTag": [XRayTags.APITag],
-                        "outboundTag": XRayTags.APITag,
-                    }
-                ]
-            }
-        },
     }
 
     SS_INBOUND = {
@@ -160,7 +143,7 @@ class XRayTemplates:
     @classmethod
     def gen_base_config(cls, xray_grpc_port, log_level):
         xray_config = deepcopy(XRayTemplates.DEFAULT_CONFIG)
-        xray_config["inbounds"][0]["port"] = xray_grpc_port
+        xray_config["api"]["listen"] += f":{xray_grpc_port}"
         xray_config["log"]["loglevel"] = log_level
         return xray_config
 
@@ -232,7 +215,7 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
     )
     used_traffic = models.BigIntegerField("已用流量(单位字节)", default=0)
     total_traffic = models.BigIntegerField("总流量(单位字节)", default=settings.GB)
-    xray_grpc_port = models.IntegerField("xray grpc port", default=23456)
+    xray_grpc_port = models.IntegerField("xray grpc port", default=8121)
     provider_remark = models.CharField("vps备注", max_length=64, default="")
 
     ehco_listen_host = models.CharField(
