@@ -41,6 +41,14 @@ class HysteriaTemplates:
         "speedTest": False,
         "disableUDP": False,
         "udpIdleTimeout": 60 * NANOSECONDS_PER_SECOND,
+        "masquerade": {
+            "type": "proxy",
+            "proxy": {
+                "url": "https://www.apple.com",
+                "rewriteHost": True,
+                "insecure": True
+            }
+        }
     }
 
     @classmethod
