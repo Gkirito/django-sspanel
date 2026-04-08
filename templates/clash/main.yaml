@@ -6,56 +6,111 @@ allow-lan: true
 log-level: info
 external-controller: 0.0.0.0:9090
 proxy-groups:
-  - name: PROXY
+  - name: 🌏PROXY
     type: select
     proxies:
+      - ✈️ AutoBest
+      - 🇭🇰HK-LB
+      - 🇹🇼TW-LB
+      - 🇯🇵JP-LB
+      - 🇺🇸US-LB
       - DIRECT
-      - HK-LB
-      - JP-LB
-      - US-LB
-      - TW-LB
     use:
       - {{ provider_name }}-all
 
-  - name: HK-LB
+  - name: 🗼Telegram
+    type: select
+    proxies:
+      - 🌏PROXY
+      - 🇭🇰HK-LB
+      - 🇹🇼TW-LB
+      - 🇯🇵JP-LB
+      - 🇺🇸US-LB
+      - ✈️ AutoBest
+      - DIRECT
+
+  - name: 🍎Apple
+    type: select
+    proxies:
+      - DIRECT
+      - 🌏PROXY
+      - 🇭🇰HK-LB
+      - 🇹🇼TW-LB
+      - 🇯🇵JP-LB
+      - 🇺🇸US-LB
+      - ✈️ AutoBest
+
+  - name: 🤖AI-LB
+    type: load-balance
+    strategy: consistent-hashing
+    filter: "AI"
+    use:
+      - {{ provider_name }}-all
+
+  - name: 🎬GlobalMedia-LB
+    type: select
+    strategy: consistent-hashing
+    filter: "Netflix"
+    use:
+      - {{ provider_name }}-all
+
+  - name: ✈️ AutoBest
+    type: url-test
+    interval: 300
+    use:
+      - {{ provider_name }}-all
+
+  - name: 🇭🇰HK-LB
     type: load-balance
     strategy: consistent-hashing
     filter: "香港|hk|HK"
     use:
       - {{ provider_name }}-all
-  
-  - name: TW-LB
+
+  - name: 🇹🇼TW-LB
     type: load-balance
     strategy: consistent-hashing
     filter: "台湾|tw|TW"
     use:
       - {{ provider_name }}-all
 
-  - name: JP-LB
+  - name: 🇯🇵JP-LB
     type: load-balance
     strategy: consistent-hashing
     filter: "日本|jp|JP"
     use:
       - {{ provider_name }}-all
 
-  - name: US-LB
+  - name: 🇺🇸US-LB
     type: load-balance
     strategy: consistent-hashing
     filter: "美国|us|US"
     use:
       - {{ provider_name }}-all
 
-  - name: PROXY-NATIVE-IP
-    type: select
-    use:
-      - {{ provider_name }}-native-ip
-
-  - name: Final
+  - name: 🚄SpeedTest
     type: select
     proxies:
       - DIRECT
-      - PROXY
-      - PROXY-NATIVE-IP
+    use:
+      - {{ provider_name }}-all
+
+  - name: 🕸️Final
+    type: select
+    proxies:
+      - DIRECT
+      - 🇭🇰HK-LB
+      - 🇹🇼TW-LB
+      - 🇯🇵JP-LB
+      - 🇺🇸US-LB
+      - 🌏PROXY
+
+  - name: 🛡️Guard
+    type: select
+    proxies:
+      - REJECT
+      - DIRECT
+      - 🌏PROXY
 
 proxy-providers:
   {{ provider_name }}-all:
@@ -69,100 +124,236 @@ proxy-providers:
       tolerance: 150
       lazy: true
       url: http://www.gstatic.com/generate_204
-  {{ provider_name }}-native-ip:
-      type: http
-      url: {{ native_ip_proxy_provider_url|safe }}
-      interval: 3600
-      path: ./providers/{{ provider_name }}-native-ip.yaml
 
 rule-providers:
-  reject:
-    type: http
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt"
-    path: ./ruleset/reject.yaml
-    interval: 86400
-  icloud:
-    type: http
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/icloud.txt"
-    path: ./ruleset/icloud.yaml
-    interval: 86400
-  apple:
-    type: http
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/apple.txt"
-    path: ./ruleset/apple.yaml
-    interval: 86400
-  proxy:
-    type: http
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt"
-    path: ./ruleset/proxy.yaml
-    interval: 86400
-  direct:
-    type: http
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt"
-    path: ./ruleset/direct.yaml
-    interval: 86400
-  private:
-    type: http
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/private.txt"
-    path: ./ruleset/private.yaml
-    interval: 86400
-  gfw:
-    type: http
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt"
-    path: ./ruleset/gfw.yaml
-    interval: 86400
-  tld-not-cn:
-    type: http
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/tld-not-cn.txt"
-    path: ./ruleset/tld-not-cn.yaml
-    interval: 86400
-  telegramcidr:
-    type: http
-    behavior: ipcidr
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/telegramcidr.txt"
-    path: ./ruleset/telegramcidr.yaml
-    interval: 86400
-  cncidr:
-    type: http
-    behavior: ipcidr
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt"
-    path: ./ruleset/cncidr.yaml
-    interval: 86400
-  lancidr:
-    type: http
-    behavior: ipcidr
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt"
-    path: ./ruleset/lancidr.yaml
-    interval: 86400
-  applications:
+  reject_non_ip_no_drop:
     type: http
     behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/applications.txt"
-    path: ./ruleset/applications.yaml
-    interval: 86400
-
-
-  # netflix https://github.com/snapei/clash-pro-rules/
-  netflix:
+    format: text
+    interval: 43200
+    url: https://ruleset-mirror.skk.moe/Clash/non_ip/reject-no-drop.txt
+    path: ./sukkaw_ruleset/reject_non_ip_no_drop.txt
+  reject_non_ip_drop:
+    type: http
+    behavior: classical
+    format: text
+    interval: 43200
+    url: https://ruleset-mirror.skk.moe/Clash/non_ip/reject-drop.txt
+    path: ./sukkaw_ruleset/reject_non_ip_drop.txt
+  reject_non_ip:
+    type: http
+    behavior: classical
+    format: text
+    interval: 43200
+    url: https://ruleset-mirror.skk.moe/Clash/non_ip/reject.txt
+    path: ./sukkaw_ruleset/reject_non_ip.txt
+  reject_domainset:
     type: http
     behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/snapei/clash-pro-rules@release/netflix.txt"
-    path: ./ruleset/netflix.yaml
-    interval: 86400
-  netflixcidr:
+    format: text
+    interval: 43200
+    url: https://ruleset-mirror.skk.moe/Clash/domainset/reject.txt
+    path: ./sukkaw_ruleset/reject_domainset.txt
+  # reject_extra_domainset:
+  #   type: http
+  #   behavior: domain
+  #   format: text
+  #   interval: 43200
+  #   url: https://ruleset-mirror.skk.moe/Clash/domainset/reject_extra.txt
+  #   path: ./sukkaw_ruleset/reject_domainset_extra.txt
+  reject_ip:
+    type: http
+    behavior: classical
+    format: text
+    interval: 43200
+    url: https://ruleset-mirror.skk.moe/Clash/ip/reject.txt
+    path: ./sukkaw_ruleset/reject_ip.txt
+  sogouinput:
+    type: http
+    behavior: classical
+    format: text
+    interval: 43200
+    url: https://ruleset-mirror.skk.moe/Clash/non_ip/sogouinput.txt
+    path: ./sukkaw_ruleset/sogouinput.txt
+
+  speedtest:
+    type: http
+    behavior: domain
+    format: text
+    interval: 43200
+    url: https://ruleset-mirror.skk.moe/Clash/domainset/speedtest.txt
+    path: ./sukkaw_ruleset/speedtest.txt
+
+  cdn_domainset:
+    type: http
+    behavior: domain
+    format: text
+    interval: 43200
+    url: https://ruleset-mirror.skk.moe/Clash/domainset/cdn.txt
+    path: ./sukkaw_ruleset/cdn_domainset.txt
+  cdn_non_ip:
+    type: http
+    behavior: classical
+    format: text
+    interval: 43200
+    url: https://ruleset-mirror.skk.moe/Clash/non_ip/cdn.txt
+    path: ./sukkaw_ruleset/cdn_non_ip.txt
+
+  stream_non_ip:
+    type: http
+    behavior: classical
+    format: text
+    interval: 43200
+    url: https://ruleset-mirror.skk.moe/Clash/non_ip/stream.txt
+    path: ./sukkaw_ruleset/stream_non_ip.txt
+  stream_ip:
+    type: http
+    behavior: classical
+    format: text
+    interval: 43200
+    url: https://ruleset-mirror.skk.moe/Clash/ip/stream.txt
+    path: ./sukkaw_ruleset/stream_ip.txt
+
+  ai_non_ip:
+    type: http
+    behavior: classical
+    format: text
+    interval: 43200
+    url: https://ruleset-mirror.skk.moe/Clash/non_ip/ai.txt
+    path: ./sukkaw_ruleset/ai_non_ip.txt
+  apple_intelligence_non_ip:
+    type: http
+    behavior: classical
+    format: text
+    interval: 43200
+    url: https://ruleset-mirror.skk.moe/Clash/non_ip/apple_intelligence.txt
+    path: ./sukkaw_ruleset/apple_intelligence_non_ip.txt
+
+  telegram_non_ip:
+    type: http
+    behavior: classical
+    format: text
+    interval: 43200
+    url: https://ruleset-mirror.skk.moe/Clash/non_ip/telegram.txt
+    path: ./sukkaw_ruleset/telegram_non_ip.txt
+  telegram_ip:
+    type: http
+    behavior: classical
+    format: text
+    interval: 43200
+    url: https://ruleset-mirror.skk.moe/Clash/ip/telegram.txt
+    path: ./sukkaw_ruleset/telegram_ip.txt
+
+  apple_cdn:
+    type: http
+    behavior: domain
+    format: text
+    interval: 43200
+    url: https://ruleset-mirror.skk.moe/Clash/domainset/apple_cdn.txt
+    path: ./sukkaw_ruleset/apple_cdn.txt
+  apple_services:
+    type: http
+    behavior: classical
+    format: text
+    interval: 43200
+    url: https://ruleset-mirror.skk.moe/Clash/non_ip/apple_services.txt
+    path: ./sukkaw_ruleset/apple_services.txt
+  apple_cn_non_ip:
+    type: http
+    behavior: classical
+    format: text
+    interval: 43200
+    url: https://ruleset-mirror.skk.moe/Clash/non_ip/apple_cn.txt
+    path: ./sukkaw_ruleset/apple_cn_non_ip.txt
+
+  microsoft_cdn_non_ip:
+    type: http
+    behavior: classical
+    format: text
+    interval: 43200
+    url: https://ruleset-mirror.skk.moe/Clash/non_ip/microsoft_cdn.txt
+    path: ./sukkaw_ruleset/microsoft_cdn_non_ip.txt
+  microsoft_non_ip:
+    type: http
+    behavior: classical
+    format: text
+    interval: 43200
+    url: https://ruleset-mirror.skk.moe/Clash/non_ip/microsoft.txt
+    path: ./sukkaw_ruleset/microsoft_non_ip.txt
+  download_domainset:
+    type: http
+    behavior: domain
+    format: text
+    interval: 43200
+    url: https://ruleset-mirror.skk.moe/Clash/domainset/download.txt
+    path: ./sukkaw_ruleset/download_domainset.txt
+  download_non_ip:
+    type: http
+    behavior: classical
+    format: text
+    interval: 43200
+    url: https://ruleset-mirror.skk.moe/Clash/non_ip/download.txt
+    path: ./sukkaw_ruleset/download_non_ip.txt
+
+  lan_non_ip:
+    type: http
+    behavior: classical
+    format: text
+    interval: 43200
+    url: https://ruleset-mirror.skk.moe/Clash/non_ip/lan.txt
+    path: ./sukkaw_ruleset/lan_non_ip.txt
+  lan_ip:
+    type: http
+    behavior: classical
+    format: text
+    interval: 43200
+    url: https://ruleset-mirror.skk.moe/Clash/ip/lan.txt
+    path: ./sukkaw_ruleset/lan_ip.txt
+
+  domestic_non_ip:
+    type: http
+    behavior: classical
+    format: text
+    interval: 43200
+    url: https://ruleset-mirror.skk.moe/Clash/non_ip/domestic.txt
+    path: ./sukkaw_ruleset/domestic_non_ip.txt
+  direct_non_ip:
+    type: http
+    behavior: classical
+    format: text
+    interval: 43200
+    url: https://ruleset-mirror.skk.moe/Clash/non_ip/direct.txt
+    path: ./sukkaw_ruleset/direct_non_ip.txt
+  global_non_ip:
+    type: http
+    behavior: classical
+    format: text
+    interval: 43200
+    url: https://ruleset-mirror.skk.moe/Clash/non_ip/global.txt
+    path: ./sukkaw_ruleset/global_non_ip.txt
+  domestic_ip:
+    type: http
+    behavior: classical
+    format: text
+    interval: 43200
+    url: https://ruleset-mirror.skk.moe/Clash/ip/domestic.txt
+    path: ./sukkaw_ruleset/domestic_ip.txt
+
+  china_ip:
     type: http
     behavior: ipcidr
-    url: "https://cdn.jsdelivr.net/gh/snapei/clash-pro-rules@release/netflixcidr.txt"
-    path: ./ruleset/netflixcidr.yaml
-    interval: 86400
+    format: text
+    interval: 43200
+    url: https://ruleset-mirror.skk.moe/Clash/ip/china_ip.txt
+    path: ./sukkaw_ruleset/china_ip.txt
+  china_ip_ipv6:
+    type: http
+    behavior: ipcidr
+    format: text
+    interval: 43200
+    url: https://ruleset-mirror.skk.moe/Clash/ip/china_ip_ipv6.txt
+    path: ./sukkaw_ruleset/china_ipv6.txt
+
 
   # proxy nodes
   direct_domain_list:
@@ -179,28 +370,51 @@ rule-providers:
     interval: 86400
 
 rules:
-  # OPENAI check  https://github.com/v2fly/domain-list-community/blob/master/data/openai
-  - DOMAIN,chatgpt.com,PROXY-NATIVE-IP
-  - DOMAIN,oaistatic.com,PROXY-NATIVE-IP
-  - DOMAIN,oaiusercontent.com,PROXY-NATIVE-IP
-  - DOMAIN,openai.com,PROXY-NATIVE-IP
-  - DOMAIN-KEYWORD,openai,PROXY-NATIVE-IP
-  - DOMAIN-KEYWORD,openaiapi,PROXY-NATIVE-IP
-  - RULE-SET,netflix,PROXY-NATIVE-IP
-  - RULE-SET,netflixcidr,PROXY-NATIVE-IP
+  - RULE-SET,reject_non_ip_drop,REJECT-DROP
+  - RULE-SET,reject_domainset,🛡️Guard
+  # - RULE-SET,reject_extra_domainset,🛡️Guard
+  - RULE-SET,reject_non_ip,🛡️Guard
+  - RULE-SET,reject_non_ip_no_drop,🛡️Guard
+  - RULE-SET,reject_ip,🛡️Guard
+  - RULE-SET,sogouinput,🛡️Guard
 
-  - RULE-SET,reject,REJECT
+  - RULE-SET,speedtest,🚄SpeedTest
+
+  - RULE-SET,cdn_domainset,🌏PROXY
+  - RULE-SET,cdn_non_ip,🌏PROXY
+
+  - RULE-SET,stream_non_ip,🎬GlobalMedia-LB
+  - RULE-SET,stream_ip,🎬GlobalMedia-LB
+
+  - RULE-SET,ai_non_ip,🤖AI-LB
+  - RULE-SET,apple_intelligence_non_ip,🤖AI-LB
+
+  - RULE-SET,telegram_non_ip,🗼Telegram
+  - RULE-SET,telegram_ip,🗼Telegram
+
+  - RULE-SET,download_domainset,DIRECT
+  - RULE-SET,download_non_ip,DIRECT
+
+  - RULE-SET,apple_cdn,🍎Apple
+  - RULE-SET,apple_services,🍎Apple
+  - RULE-SET,apple_cn_non_ip,DIRECT
+
+  - RULE-SET,microsoft_cdn_non_ip,DIRECT
+  - RULE-SET,microsoft_non_ip,DIRECT
+
+  - RULE-SET,lan_non_ip,DIRECT
+  - RULE-SET,lan_ip,DIRECT
+
+  - RULE-SET,domestic_non_ip,DIRECT
+  - RULE-SET,direct_non_ip,DIRECT
+  - RULE-SET,global_non_ip,🌏PROXY
+  - RULE-SET,domestic_ip,DIRECT
+
+  - RULE-SET,china_ip,DIRECT
+  - RULE-SET,china_ip_ipv6,DIRECT
+
   - RULE-SET,direct_domain_list,DIRECT
   - RULE-SET,direct_ip_list,DIRECT
-  - RULE-SET,applications,DIRECT
-  - RULE-SET,private,DIRECT
-  - RULE-SET,icloud,DIRECT
-  - RULE-SET,apple,DIRECT
-  - RULE-SET,direct,DIRECT
-  - RULE-SET,lancidr,DIRECT
-  - RULE-SET,cncidr,DIRECT
-  - RULE-SET,proxy,PROXY
-  - RULE-SET,telegramcidr,PROXY
   - GEOIP,LAN,DIRECT
   - GEOIP,CN,DIRECT
-  - MATCH,Final
+  - MATCH,🕸️Final
