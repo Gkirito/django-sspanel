@@ -24,7 +24,8 @@ class TrojanConfigInline(admin.StackedInline):
     model = models.TrojanConfig
     verbose_name = "Trojan配置"
     fields = ["proxy_node", "multi_user_port", "fallback_addr"]
-    
+
+
 class ObfsPassWidget(forms.TextInput):
     """带随机生成按钮的混淆方式输入框"""
 
@@ -38,16 +39,23 @@ class ObfsPassWidget(forms.TextInput):
 class HysteriaConfigInline(admin.StackedInline):
     model = models.HysteriaConfig
     verbose_name = "Hysteria配置"
-    fields = ["proxy_node", "obfs_pass", "multi_user_port", "port_hop_min", "port_hop_max", "port_hop_interval"]
+    fields = [
+        "proxy_node",
+        "obfs_pass",
+        "multi_user_port",
+        "port_hop_min",
+        "port_hop_max",
+        "port_hop_interval",
+    ]
 
     def get_formset(self, request, obj=None, **kwargs):
         kwargs.update({"widgets": {"obfs_pass": ObfsPassWidget}})
         return super().get_formset(request, obj, **kwargs)
- 
+
 
 class OccupancyConfigInline(admin.StackedInline):
     model = models.OccupancyConfig
-    
+
     verbose_name = "占用配置"
     fields = [
         "proxy_node",
@@ -316,7 +324,7 @@ class RelayRuleAdmin(admin.ModelAdmin):
 
     @admin.display(description="流量")
     def traffic_info(self, instance):
-        return f"up:{traffic_format(instance.up_traffic) }/down:{traffic_format(instance.down_traffic)}"
+        return f"up:{traffic_format(instance.up_traffic)}/down:{traffic_format(instance.down_traffic)}"
 
 
 class UserTrafficLogAdmin(admin.ModelAdmin):

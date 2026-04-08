@@ -37,7 +37,7 @@ NANOSECONDS_PER_SECOND = round(time.monotonic_ns() / time.monotonic())
 class HysteriaTemplates:
     DEFAULT_CONFIG = {
         "listen": ":",
-        "ignoreClientBandwidth": False, 
+        "ignoreClientBandwidth": False,
         "speedTest": False,
         "disableUDP": False,
         "udpIdleTimeout": 60 * NANOSECONDS_PER_SECOND,
@@ -46,9 +46,9 @@ class HysteriaTemplates:
             "proxy": {
                 "url": "https://www.apple.com",
                 "rewriteHost": True,
-                "insecure": True
-            }
-        }
+                "insecure": True,
+            },
+        },
     }
 
     @classmethod
@@ -61,9 +61,10 @@ class HysteriaTemplates:
                 "type": "salamander",
                 "salamander": {
                     "password": obfs_pass,
-                }
+                },
             }
         return hysteria_config
+
 
 class XRayTemplates:
     DEFAULT_CONFIG = {
@@ -83,8 +84,7 @@ class XRayTemplates:
                 "statsOutboundDownlink": True,
             },
         },
-        "inbounds": [
-        ],
+        "inbounds": [],
         "outbounds": [{"tag": "direct", "protocol": "freedom", "settings": {}}],
     }
 
@@ -199,11 +199,11 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
         NODE_TYPE_SSR,
         NODE_TYPE_VMESS,
         NODE_TYPE_VLESS,
-        NODE_TYPE_HYSTERIA
+        NODE_TYPE_HYSTERIA,
     }
     NODE_CHOICES = (
         (NODE_TYPE_SS, NODE_TYPE_SS),
-        (NODE_TYPE_HYSTERIA,NODE_TYPE_HYSTERIA),
+        (NODE_TYPE_HYSTERIA, NODE_TYPE_HYSTERIA),
         (NODE_TYPE_TROJAN, NODE_TYPE_TROJAN),
         (NODE_TYPE_SSR, NODE_TYPE_SSR),
         (NODE_TYPE_VMESS, NODE_TYPE_VMESS),
@@ -381,7 +381,7 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
                         "options": {
                             "idle_timeout_sec": 60,
                             "enable_udp": self.enable_udp,
-                        }
+                        },
                     }
                 ],
             }
@@ -414,7 +414,7 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
             b64_code = code  # trojan don't need base64 encode
         elif self.node_type == self.NODE_TYPE_HYSTERIA:
             if self.hysteria_config.obfs_pass:
-                code = f"{user.proxy_password}@{host}:{port}?insecure=1&obfs-password={self.hysteria_config.obfs_pass}&mport={self.hysteria_config.port_hop_min}-{self.hysteria_config.port_hop_max}"
+                code = f"{user.proxy_password}@{host}:{port}?insecure=1&obfs=salamander&obfs-password={self.hysteria_config.obfs_pass}&mport={self.hysteria_config.port_hop_min}-{self.hysteria_config.port_hop_max}"
             else:
                 code = f"{user.proxy_password}@{host}:{port}?insecure=1&mport={self.hysteria_config.port_hop_min}-{self.hysteria_config.port_hop_max}"
             b64_code = code  # hysteria don't need base64 encode
@@ -445,7 +445,9 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
         if self.node_type == self.NODE_TYPE_TROJAN:
             config["skip-cert-verify"] = True
         if self.node_type == self.NODE_TYPE_HYSTERIA:
-            config["ports"] = f"{self.hysteria_config.port_hop_min}-{self.hysteria_config.port_hop_max}"
+            config["ports"] = (
+                f"{self.hysteria_config.port_hop_min}-{self.hysteria_config.port_hop_max}"
+            )
             config["skip-cert-verify"] = True
             if self.hysteria_config.obfs_pass:
                 config["obfs"] = "salamander"
@@ -646,15 +648,13 @@ class HysteriaConfig(models.Model, resetPortMixin):
         help_text="代理节点",
         verbose_name="代理节点",
     )
-    port_hop_min = models.IntegerField("端口跳跃最小值", default=0)    
+    port_hop_min = models.IntegerField("端口跳跃最小值", default=0)
     port_hop_max = models.IntegerField("端口跳跃最大值", default=0)
     port_hop_interval = models.IntegerField("端口跳跃间隔(秒)", default=60)
     multi_user_port = models.IntegerField(
         "多用户端口", help_text="单端口多用户端口", null=True, blank=True
     )
-    obfs_pass = models.CharField(
-        "混淆方式", max_length=64, blank=True, null=True
-    )
+    obfs_pass = models.CharField("混淆方式", max_length=64, blank=True, null=True)
 
     class Meta:
         verbose_name = "Hysteria配置"
@@ -695,7 +695,8 @@ class HysteriaConfig(models.Model, resetPortMixin):
             "enable": enable,
             "protocol": ProxyNode.NODE_TYPE_HYSTERIA,
         }
-        
+
+
 class TrojanConfig(models.Model, resetPortMixin):
     proxy_node = models.OneToOneField(
         to=ProxyNode,
