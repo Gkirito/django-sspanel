@@ -52,10 +52,17 @@ class HysteriaTemplates:
     }
 
     @classmethod
-    def gen_base_config(cls, port, enable_udp=False):
+    def gen_base_config(cls, port, obfs_pass, enable_udp=False):
         hysteria_config = deepcopy(HysteriaTemplates.DEFAULT_CONFIG)
         hysteria_config["listen"] += str(port)
         hysteria_config["disableUDP"] = not enable_udp
+        if obfs_pass:
+            hysteria_config["obfs_pass"] = {
+                "type": "salamander",
+                "salamander": {
+                    "password": obfs_pass,
+                }
+            }
         return hysteria_config
 
 class XRayTemplates:
@@ -406,7 +413,10 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
             code = f"{user.proxy_password}@{host}:{port}?allowInsecure=1&udp={udp}"
             b64_code = code  # trojan don't need base64 encode
         elif self.node_type == self.NODE_TYPE_HYSTERIA:
-            code = f"{user.proxy_password}@{host}:{port}?insecure=1&mport={self.hysteria_config.port_hop_min}-{self.hysteria_config.port_hop_max}"
+            if self.hysteria_config.obfs_pass:
+                code = f"{user.proxy_password}@{host}:{port}?insecure=1&obfs-password={self.hysteria_config.obfs_pass}&mport={self.hysteria_config.port_hop_min}-{self.hysteria_config.port_hop_max}"
+            else:
+                code = f"{user.proxy_password}@{host}:{port}?insecure=1&mport={self.hysteria_config.port_hop_min}-{self.hysteria_config.port_hop_max}"
             b64_code = code  # hysteria don't need base64 encode
         return f"{self.node_type}://{b64_code}#{quote(remark)}"
 
@@ -437,6 +447,9 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
         if self.node_type == self.NODE_TYPE_HYSTERIA:
             config["ports"] = f"{self.hysteria_config.port_hop_min}-{self.hysteria_config.port_hop_max}"
             config["skip-cert-verify"] = True
+            if self.hysteria_config.obfs_pass:
+                config["obfs"] = "salamander"
+                config["obfs-password"] = self.hysteria_config.obfs_pass
 
         return json.dumps(config, ensure_ascii=False)
 
@@ -639,6 +652,9 @@ class HysteriaConfig(models.Model, resetPortMixin):
     multi_user_port = models.IntegerField(
         "多用户端口", help_text="单端口多用户端口", null=True, blank=True
     )
+    obfs_pass = models.CharField(
+        "混淆方式", max_length=64, blank=True, null=True
+    )
 
     class Meta:
         verbose_name = "Hysteria配置"
@@ -650,6 +666,7 @@ class HysteriaConfig(models.Model, resetPortMixin):
     def to_node_config(self, node: ProxyNode):
         hysteria_config = HysteriaTemplates.gen_base_config(
             self.multi_user_port,
+            self.obfs_pass,
             node.enable_udp,
         )
         configs = {

@@ -25,10 +25,24 @@ class TrojanConfigInline(admin.StackedInline):
     verbose_name = "Trojan配置"
     fields = ["proxy_node", "multi_user_port", "fallback_addr"]
     
+class ObfsPassWidget(forms.TextInput):
+    """带随机生成按钮的混淆方式输入框"""
+
+    def __init__(self, attrs=None):
+        super().__init__(attrs=attrs)
+
+    class Media:
+        js = ("proxy/obfs_pass_generate.js",)
+
+
 class HysteriaConfigInline(admin.StackedInline):
     model = models.HysteriaConfig
     verbose_name = "Hysteria配置"
-    fields = ["proxy_node", "multi_user_port", "port_hop_min", "port_hop_max","port_hop_interval"]
+    fields = ["proxy_node", "obfs_pass", "multi_user_port", "port_hop_min", "port_hop_max", "port_hop_interval"]
+
+    def get_formset(self, request, obj=None, **kwargs):
+        kwargs.update({"widgets": {"obfs_pass": ObfsPassWidget}})
+        return super().get_formset(request, obj, **kwargs)
  
 
 class OccupancyConfigInline(admin.StackedInline):
