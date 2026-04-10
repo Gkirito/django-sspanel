@@ -57,7 +57,7 @@ class HysteriaTemplates:
         hysteria_config["listen"] += str(port)
         hysteria_config["disableUDP"] = not enable_udp
         if obfs_pass:
-            hysteria_config["obfs_pass"] = {
+            hysteria_config["obfs"] = {
                 "type": "salamander",
                 "salamander": {
                     "password": obfs_pass,
