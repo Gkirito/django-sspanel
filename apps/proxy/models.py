@@ -399,12 +399,12 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
         if relay_rule:
             host = relay_rule.relay_host
             port = relay_rule.relay_port
-            remark = relay_rule.name
+            remark = self.get_display_remark(relay_rule.name)
             udp = relay_rule.enable_udp and self.enable_udp
         else:
             host = self.server
             port = self.get_user_port()
-            remark = self.remark
+            remark = self.get_display_remark()
             udp = self.enable_udp
         if self.node_type == self.NODE_TYPE_SS:
             code = f"{self.ss_config.method}:{user.proxy_password}@{host}:{port}"
@@ -424,11 +424,11 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
         if relay_rule:
             host = relay_rule.relay_host
             port = relay_rule.relay_port
-            remark = relay_rule.name
+            remark = self.get_display_remark(relay_rule.name)
             udp = relay_rule.enable_udp and self.enable_udp
         else:
             host = self.server
-            remark = self.remark
+            remark = self.get_display_remark()
             udp = self.enable_udp
             port = self.get_user_port()
 
@@ -533,6 +533,17 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
         if self.enlarge_scale != Decimal(1.0):
             name = f"[{self.enlarge_scale}x]{name}"
         return name
+
+    @cached_property
+    def remark_with_flag(self):
+        flag = c.COUNTRY_FLAGS.get(self.country, "")
+        return f"{flag}{self.remark}"
+
+    def get_display_remark(self, base_remark=None):
+        flag = c.COUNTRY_FLAGS.get(self.country, "")
+        if base_remark is None:
+            base_remark = self.remark
+        return f"{flag}{base_remark}"
 
     @transaction.atomic
     def duplicate(self):
