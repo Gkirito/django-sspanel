@@ -6,6 +6,7 @@ from copy import deepcopy
 from datetime import timedelta
 from decimal import Decimal
 from functools import cached_property
+from this import s
 from typing import List
 from urllib.parse import quote, urlencode
 
@@ -413,12 +414,51 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
             code = f"{user.proxy_password}@{host}:{port}?allowInsecure=1&udp={udp}"
             b64_code = code  # trojan don't need base64 encode
         elif self.node_type == self.NODE_TYPE_HYSTERIA:
+            code = f"{user.proxy_password}@{host}:{port}?insecure=1"
             if self.hysteria_config.obfs_pass:
-                code = f"{user.proxy_password}@{host}:{port}?insecure=1&obfs=salamander&obfs-password={self.hysteria_config.obfs_pass}&mport={self.hysteria_config.port_hop_min}-{self.hysteria_config.port_hop_max}"
-            else:
-                code = f"{user.proxy_password}@{host}:{port}?insecure=1&mport={self.hysteria_config.port_hop_min}-{self.hysteria_config.port_hop_max}"
+                code += (
+                    f"&obfs=salamander&obfs-password={self.hysteria_config.obfs_pass}"
+                )
+            if (
+                self.hysteria_config.port_hop_min != self.hysteria_config.port_hop_max
+                and self.hysteria_config.port_hop_max != 0
+                and self.hysteria_config.port_hop_min != 0
+            ):
+                code += f"&mport={self.hysteria_config.port_hop_min}-{self.hysteria_config.port_hop_max}"
             b64_code = code  # hysteria don't need base64 encode
         return f"{self.node_type}://{b64_code}#{quote(remark)}"
+
+    def get_user_surge_config(self, user, relay_rule=None):
+        if relay_rule:
+            host = relay_rule.relay_host
+            port = relay_rule.relay_port
+            remark = self.get_display_remark(relay_rule.name)
+            udp = relay_rule.enable_udp and self.enable_udp
+        else:
+            host = self.server
+            port = self.get_user_port()
+            remark = self.get_display_remark()
+            udp = self.enable_udp
+        extr = ""
+        if self.node_type == self.NODE_TYPE_SS:
+            extr = f"encrypt-method='{self.ss_config.method}',udp-relay=true"
+        # elif self.node_type == self.NODE_TYPE_TROJAN:
+        #     code = f"{user.proxy_password}@{host}:{port}?allowInsecure=1&udp={udp}"
+        elif self.node_type == self.NODE_TYPE_HYSTERIA:
+            if self.hysteria_config.obfs_pass:
+                extr = f"salamander-password='{self.hysteria_config.obfs_pass}'"
+            if (
+                self.hysteria_config.port_hop_min != self.hysteria_config.port_hop_max
+                and self.hysteria_config.port_hop_max != 0
+                and self.hysteria_config.port_hop_min != 0
+            ):
+                if extr != "":
+                    extr += ","
+                extr += f"port-hopping='{self.hysteria_config.port_hop_min}-{self.hysteria_config.port_hop_max}'"
+        if extr:
+            return f"{remark}={self.node_type},{host},{port},password='{user.proxy_password}',sni='{self.server}',skip-cert-verify=true,tfo=false,{extr}"
+        else:
+            return f"{remark}={self.node_type},{host},{port},password='{user.proxy_password}',sni='{self.server}',skip-cert-verify=true,tfo=false"
 
     def get_user_clash_config(self, user, relay_rule=None):
         if relay_rule:
@@ -445,10 +485,16 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
         if self.node_type == self.NODE_TYPE_TROJAN:
             config["skip-cert-verify"] = True
         if self.node_type == self.NODE_TYPE_HYSTERIA:
-            config["ports"] = (
-                f"{self.hysteria_config.port_hop_min}-{self.hysteria_config.port_hop_max}"
-            )
+            if (
+                self.hysteria_config.port_hop_min != self.hysteria_config.port_hop_max
+                and self.hysteria_config.port_hop_max != 0
+                and self.hysteria_config.port_hop_min != 0
+            ):
+                config["ports"] = (
+                    f"{self.hysteria_config.port_hop_min}-{self.hysteria_config.port_hop_max}"
+                )
             config["skip-cert-verify"] = True
+            config["sni"] = self.server
             if self.hysteria_config.obfs_pass:
                 config["obfs"] = "salamander"
                 config["obfs-password"] = self.hysteria_config.obfs_pass

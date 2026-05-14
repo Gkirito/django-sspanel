@@ -22,6 +22,11 @@ urlpatterns = [
         views.ClashDirectIPRuleSetView.as_view(),
         name="direct_domain_rule_set",
     ),
+    path(
+        "subscribe/surge/proxy_providers/",
+        views.SurgeProxyProviderView.as_view(),
+        name="proxy_providers",
+    ),
     path("shop/", views.purchase, name="purchase"),
     path("change/theme/", views.change_theme, name="change_theme"),
     path("checkin/", views.UserCheckInView.as_view(), name="checkin"),

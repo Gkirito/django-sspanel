@@ -255,6 +255,15 @@ class User(AbstractUser):
             + f"/api/subscribe/clash/proxy_providers/?{urlencode(params)}"
         )
 
+    def get_surge_proxy_provider_endpoint(self, native_ip=False):
+        params = {"uid": self.uid}
+        if native_ip:
+            params["native_ip"] = "true"
+        return (
+            settings.SITE_HOST
+            + f"/api/subscribe/surge/proxy_providers/?{urlencode(params)}"
+        )
+
     @property
     def direct_ip_rule_set_endpoint(self):
         params = {"uid": self.uid}
@@ -405,7 +414,7 @@ class UserOrder(UserMixin, models.Model):
     expired_at = models.DateTimeField(verbose_name="过期时间", db_index=True)
 
     def __str__(self):
-        return f"<{self.id,self.user}>:{self.amount}"
+        return f"<{self.id, self.user}>:{self.amount}"
 
     class Meta:
         verbose_name = "用户订单"
@@ -418,7 +427,7 @@ class UserOrder(UserMixin, models.Model):
     def gen_out_trade_no(cls):
         "凑一个 32 位长的字符串"
         dt_str = datetime.datetime.fromtimestamp(time.time()).strftime("%Y%m%d%H%M%S%s")
-        return f"{dt_str}r{random.randint(1000000,9999999)}"
+        return f"{dt_str}r{random.randint(1000000, 9999999)}"
 
     @classmethod
     def get_not_paid_order_by_amount(cls, user, amount):

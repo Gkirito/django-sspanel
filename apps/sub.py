@@ -1,6 +1,8 @@
 import base64
+from cmath import e
 
 from django.conf import settings
+from django.http import HttpResponse
 from django.template.loader import render_to_string
 
 from apps.sspanel.models import User
@@ -12,11 +14,15 @@ class UserSubManager:
     CLIENT_SHADOWROCKET = "shadowrocket"
     CLIENT_CLASH = "clash"
     CLIENT_CLASH_PROXY_PROVIDER = "clash_proxy_provider"
+    CLIENT_SURGE_PROVIDER = "surge_provider"
+    CLIENT_SURGE = "surge"
 
     CLIENT_SET = {
         CLIENT_SHADOWROCKET,
         CLIENT_CLASH,
         CLIENT_CLASH_PROXY_PROVIDER,
+        CLIENT_SURGE,
+        CLIENT_SURGE_PROVIDER,
     }
 
     def __init__(self, user, node_list, sub_client=CLIENT_CLASH):
@@ -33,9 +39,6 @@ class UserSubManager:
     def _get_clash_sub_yaml(self):
         user: User = self.user
         all_proxy_provider_url = user.get_clash_proxy_provider_endpoint()
-        native_ip_proxy_provider_url = user.get_clash_proxy_provider_endpoint(
-            native_ip=True
-        )
         direct_ip_rule_set_url = user.direct_ip_rule_set_endpoint
         direct_domain_rule_set_url = user.direct_domain_rule_set_endpoint
 
@@ -43,18 +46,44 @@ class UserSubManager:
         for node in self.node_list:
             node_location_set.add(node.country)
 
-        return render_to_string(
+        content = render_to_string(
             "clash/main.yaml",
             {
                 "sub_client": self.sub_client,
                 "provider_name": settings.SITE_TITLE,
                 "all_proxy_provider_url": all_proxy_provider_url,
-                "native_ip_proxy_provider_url": native_ip_proxy_provider_url,
                 "direct_ip_rule_set_url": direct_ip_rule_set_url,
                 "direct_domain_rule_set_url": direct_domain_rule_set_url,
                 "node_location_set": node_location_set,
             },
         )
+        response = HttpResponse(content, content_type="application/octet-stream")
+        response["Content-Disposition"] = (
+            f'attachment; filename="{settings.SITE_TITLE}.yaml"'
+        )
+        return response
+
+    def _get_surge_sub_conf(self):
+        user: User = self.user
+        all_proxy_provider_url = user.get_surge_proxy_provider_endpoint()
+
+        node_location_set = set()
+        for node in self.node_list:
+            node_location_set.add(node.country)
+
+        content = render_to_string(
+            "surge/safetunnel.toml",
+            {
+                "sub_client": self.sub_client,
+                "provider_name": settings.SITE_TITLE,
+                "all_proxy_provider_url": all_proxy_provider_url,
+            },
+        )
+        response = HttpResponse(content, content_type="application/octet-stream")
+        response["Content-Disposition"] = (
+            f'attachment; filename="{settings.SITE_TITLE}.surgeconfig"'
+        )
+        return response
 
     def _get_shadowrocket_sub_links(self):
         sub_links = ""
@@ -83,6 +112,10 @@ class UserSubManager:
             return self._get_shadowrocket_sub_links()
         elif self.sub_client == self.CLIENT_CLASH_PROXY_PROVIDER:
             return self.get_clash_proxy_providers()
+        elif self.sub_client == self.CLIENT_SURGE:
+            return self._get_surge_sub_conf()
+        elif self.sub_client == self.CLIENT_SURGE_PROVIDER:
+            return self.get_surge_proxy_providers()
         else:
             raise ValueError(f"sub_client {self.sub_client} not support")
 
@@ -114,3 +147,16 @@ class UserSubManager:
             "clash/providers.yaml",
             {"nodes": sorted(node_configs, key=lambda x: x["name"])},
         )
+
+    def get_surge_proxy_providers(self):
+        """todo support multi provider group"""
+        node_configs = ""
+        # for clean the rule have the same port
+        # key: relay_node_id+port, value: clash cfg
+        for node in self.node_list:
+            if node.enable_relay:
+                for rule in node.get_enabled_relay_rules():
+                    node_configs += f"{node.get_user_surge_config(self.user, rule)}\n"
+            if node.enable_direct:
+                node_configs += f"{node.get_user_surge_config(self.user)}\n"
+        return node_configs

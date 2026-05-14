@@ -117,6 +117,8 @@ class SubscribeView(UserNodeBaseView):
                 sub_info = UserSubManager(user, node_list, sub_client).get_sub_info()
             except ValueError as e:
                 return HttpResponseBadRequest(str(e))
+            if isinstance(sub_info, HttpResponse):
+                return sub_info
             return HttpResponse(
                 sub_info,
                 content_type="text/plain; charset=utf-8",
@@ -184,6 +186,20 @@ class ClashDirectIPRuleSetView(ClashDirectRuleSetBaseView):
                 request,
                 "clash/direct_ip.yaml",
                 context=context,
+                content_type="text/plain; charset=utf-8",
+            )
+        else:
+            return response_or_nodes
+
+
+class SurgeProxyProviderView(UserNodeBaseView):
+    def get(self, request):
+        user, response_or_nodes = self.get_user_and_nodes(request)
+        if not isinstance(response_or_nodes, HttpResponse):
+            node_list = response_or_nodes
+            providers = UserSubManager(user, node_list).get_surge_proxy_providers()
+            return HttpResponse(
+                providers,
                 content_type="text/plain; charset=utf-8",
             )
         else:
