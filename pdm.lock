@@ -5,7 +5,7 @@
 groups = ["default", "dev"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:19b589e0702381dcf9eb2346ac980866f40cfd16e29e0f2dea14a7afd305c13d"
+content_hash = "sha256:24ebff1a8f45efc4b2278bd1d72369aee580c5b13f9b0b092cfa1cf20084a4b1"
 
 [[metadata.targets]]
 requires_python = "~=3.11"
@@ -708,6 +708,20 @@ dependencies = [
 files = [
     {file = "django-trix-editor-0.4.1.tar.gz", hash = "sha256:ebf02c91f399e4b1cbc79630fb1c4a4114e1f03d8880dbb9d06297c16c6095ac"},
     {file = "django_trix_editor-0.4.1-py3-none-any.whl", hash = "sha256:81796be42e54705cb44534f7c6939d45e1a8c24d563699f098bf984570971330"},
+]
+
+[[package]]
+name = "django-types"
+version = "0.24.0"
+requires_python = ">=3.10"
+summary = "Type stubs for Django"
+groups = ["dev"]
+dependencies = [
+    "types-psycopg2>=2.9.21.13",
+]
+files = [
+    {file = "django_types-0.24.0-py3-none-any.whl", hash = "sha256:ddb478ca733e0dde5475118dd59ab340156980f9659fd92de2083326ae96100a"},
+    {file = "django_types-0.24.0.tar.gz", hash = "sha256:af903de8b9ee963b7594459a7a20cb8eaaab176ae2b3244ecaa089e0c570b0d1"},
 ]
 
 [[package]]
@@ -1977,6 +1991,17 @@ groups = ["default"]
 files = [
     {file = "traitlets-5.14.3-py3-none-any.whl", hash = "sha256:b74e89e397b1ed28cc831db7aea759ba6640cb3de13090ca145426688ff1ac4f"},
     {file = "traitlets-5.14.3.tar.gz", hash = "sha256:9ed0579d3502c94b4b3732ac120375cda96f923114522847de4b3bb98b96b6b7"},
+]
+
+[[package]]
+name = "types-psycopg2"
+version = "2.9.21.20260509"
+requires_python = ">=3.10"
+summary = "Typing stubs for psycopg2"
+groups = ["dev"]
+files = [
+    {file = "types_psycopg2-2.9.21.20260509-py3-none-any.whl", hash = "sha256:69f6dae384bbea830dff23621936423035db152af901331e6f9c46f7c4f4b24f"},
+    {file = "types_psycopg2-2.9.21.20260509.tar.gz", hash = "sha256:0422105f691a409e9d8048c2205aca9d694b70823248c6614393444017e9f088"},
 ]
 
 [[package]]
