@@ -117,15 +117,14 @@ class SubscribeView(UserNodeBaseView):
                 sub_info = UserSubManager(user, node_list, sub_client).get_sub_info()
             except ValueError as e:
                 return HttpResponseBadRequest(str(e))
-            if isinstance(sub_info, HttpResponse):
-                return sub_info
-            return HttpResponse(
-                sub_info,
-                content_type="text/plain; charset=utf-8",
-                headers=user.get_sub_info_header(
-                    for_android=sub_client != UserSubManager.CLIENT_SHADOWROCKET
-                ),
-            )
+            if not isinstance(sub_info, HttpResponse):
+                sub_info = HttpResponse(
+                    sub_info, content_type="text/plain; charset=utf-8"
+                )
+            sub_info["Subscription-Userinfo"] = user.get_sub_info_header(
+                for_android=sub_client != UserSubManager.CLIENT_SHADOWROCKET
+            )["Subscription-Userinfo"]
+            return sub_info
         else:
             return response_or_nodes
 
