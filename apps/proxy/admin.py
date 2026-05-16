@@ -36,6 +36,12 @@ class ObfsPassWidget(forms.TextInput):
         js = ("proxy/obfs_pass_generate.js",)
 
 
+class AnyTlsConfigInline(admin.StackedInline):
+    model = models.AnyTlsConfig
+    verbose_name = "Anytls配置"
+    fields = ["proxy_node", "multi_user_port", "padding_scheme"]
+
+
 class HysteriaConfigInline(admin.StackedInline):
     model = models.HysteriaConfig
     verbose_name = "Hysteria配置"
@@ -98,6 +104,7 @@ class ProxyNodeAdmin(admin.ModelAdmin):
         HysteriaConfigInline,
         TrojanConfigInline,
         SSConfigInline,
+        AnyTlsConfigInline,
         OccupancyConfigInline,
     ]
     list_filter = ["provider_remark", "country"]
@@ -173,6 +180,8 @@ class ProxyNodeAdmin(admin.ModelAdmin):
             return [TrojanConfigInline] + self.inlines
         elif instance.node_type == models.ProxyNode.NODE_TYPE_HYSTERIA:
             return [HysteriaConfigInline] + self.inlines
+        elif instance.node_type == models.ProxyNode.NODE_TYPE_ANYTLS:
+            return [AnyTlsConfigInline] + self.inlines
         return self.inlines
 
     @admin.display(description="等级/中转数量/在线")

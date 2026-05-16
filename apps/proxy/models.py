@@ -6,7 +6,6 @@ from copy import deepcopy
 from datetime import timedelta
 from decimal import Decimal
 from functools import cached_property
-from this import s
 from typing import List
 from urllib.parse import quote, urlencode
 
@@ -33,6 +32,20 @@ class XRayTags:
 
 # Use Python's time module to derive nanoseconds per second for hysteria configs.
 NANOSECONDS_PER_SECOND = round(time.monotonic_ns() / time.monotonic())
+
+
+class AnyTlsTemplates:
+    DEFAULT_CONFIG = {
+        "listen": "0.0.0.0:",
+    }
+
+    @classmethod
+    def gen_base_config(cls, port, padding_scheme=None, enable_udp=False):
+        anytls_config = deepcopy(AnyTlsTemplates.DEFAULT_CONFIG)
+        anytls_config["listen"] += str(port)
+        if padding_scheme:
+            anytls_config["padding_scheme"] = padding_scheme
+        return anytls_config
 
 
 class HysteriaTemplates:
@@ -194,6 +207,7 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
     NODE_TYPE_VMESS = "vmess"
     NODE_TYPE_VLESS = "vless"
     NODE_TYPE_HYSTERIA = "hysteria2"
+    NODE_TYPE_ANYTLS = "anytls"
     NODE_TYPE_SET = {
         NODE_TYPE_SS,
         NODE_TYPE_TROJAN,
@@ -201,6 +215,7 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
         NODE_TYPE_VMESS,
         NODE_TYPE_VLESS,
         NODE_TYPE_HYSTERIA,
+        NODE_TYPE_ANYTLS,
     }
     NODE_CHOICES = (
         (NODE_TYPE_SS, NODE_TYPE_SS),
@@ -209,6 +224,7 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
         (NODE_TYPE_SSR, NODE_TYPE_SSR),
         (NODE_TYPE_VMESS, NODE_TYPE_VMESS),
         (NODE_TYPE_VLESS, NODE_TYPE_VLESS),
+        (NODE_TYPE_ANYTLS, NODE_TYPE_ANYTLS),
     )
 
     EHCO_LOG_LEVELS = (
@@ -288,7 +304,9 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
     def get_active_nodes(cls):
         query = cls.objects.filter(enable=True)
         return (
-            query.select_related("ss_config", "trojan_config", "hysteria_config")
+            query.select_related(
+                "ss_config", "trojan_config", "hysteria_config", "anytls_config"
+            )
             .prefetch_related("relay_rules")
             .order_by("sequence")
         )
@@ -356,6 +374,8 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
             proxy_cfg = self.trojan_config
         elif self.node_type == self.NODE_TYPE_HYSTERIA:
             proxy_cfg = self.hysteria_config
+        elif self.node_type == self.NODE_TYPE_ANYTLS:
+            proxy_cfg = self.anytls_config
         else:
             raise Exception("not support node type")
 
@@ -395,6 +415,10 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
             return self.trojan_config.multi_user_port
         elif self.node_type == self.NODE_TYPE_HYSTERIA:
             return self.hysteria_config.multi_user_port
+        elif self.node_type == self.NODE_TYPE_ANYTLS:
+            return self.anytls_config.multi_user_port
+        else:
+            return None
 
     def get_user_shadowrocket_sub_link(self, user, relay_rule=None):
         if relay_rule:
@@ -426,6 +450,9 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
             ):
                 code += f"&mport={self.hysteria_config.port_hop_min}-{self.hysteria_config.port_hop_max}"
             b64_code = code  # hysteria don't need base64 encode
+        elif self.node_type == self.NODE_TYPE_ANYTLS:
+            code = f"{user.proxy_password}@{host}:{port}?insecure=1&udp=1&peer={self.server}"
+            b64_code = code  # anytls don't need base64 encode
         return f"{self.node_type}://{b64_code}#{quote(remark)}"
 
     def get_user_surge_config(self, user, relay_rule=None):
@@ -498,6 +525,11 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
             if self.hysteria_config.obfs_pass:
                 config["obfs"] = "salamander"
                 config["obfs-password"] = self.hysteria_config.obfs_pass
+        if self.node_type == self.NODE_TYPE_ANYTLS:
+            config["skip-cert-verify"] = True
+            config["udp"] = True
+            config["alpn"] = ["h2"]
+            config["sni"] = self.server
 
         return json.dumps(config, ensure_ascii=False)
 
@@ -693,6 +725,63 @@ class SSConfig(models.Model, resetPortMixin):
             "enable": enable,
             "method": self.method,
             "protocol": ProxyNode.NODE_TYPE_SS,
+        }
+
+
+class AnyTlsConfig(models.Model, resetPortMixin):
+    proxy_node = models.OneToOneField(
+        to=ProxyNode,
+        related_name="anytls_config",
+        on_delete=models.CASCADE,
+        primary_key=True,
+        help_text="代理节点",
+        verbose_name="代理节点",
+    )
+    multi_user_port = models.IntegerField(
+        "多用户端口", help_text="单端口多用户端口", null=True, blank=True
+    )
+    padding_scheme = models.CharField(
+        "padding 方案", max_length=64, blank=True, null=True
+    )
+
+    class Meta:
+        verbose_name = "Anytls配置"
+        verbose_name_plural = "Anytls配置"
+
+    def __str__(self) -> str:
+        return f"{self.proxy_node.__str__()}-配置"
+
+    def to_node_config(self, node: ProxyNode):
+        anytls_config = AnyTlsTemplates.gen_base_config(
+            self.multi_user_port,
+            self.padding_scheme,
+            node.enable_udp,
+        )
+        configs = {
+            "users": [],
+            "anytls_config": anytls_config,
+            "sync_traffic_endpoint": node.api_endpoint,
+            "log_level": node.ehco_log_level,
+        }
+        configs.update(node.get_ehco_server_config())
+        return configs
+
+    def to_user_config(self, node: ProxyNode, user: User):
+        have_shared_traffic = user.total_traffic > (
+            user.download_traffic + user.upload_traffic
+        )
+        have_oc_traffic = False
+        if node.have_oc_users:
+            oc = UserProxyNodeOccupancy.get_by_proxy_node_and_user(node, user)
+            if oc:
+                have_oc_traffic = not oc.out_of_usage()
+        enable = node.enable and (have_shared_traffic or have_oc_traffic)
+
+        return {
+            "user_id": user.id,
+            "password": user.proxy_password,
+            "enable": enable,
+            "protocol": ProxyNode.NODE_TYPE_ANYTLS,
         }
 
 

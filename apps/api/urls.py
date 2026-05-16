@@ -25,7 +25,7 @@ urlpatterns = [
     path(
         "subscribe/surge/proxy_providers/",
         views.SurgeProxyProviderView.as_view(),
-        name="proxy_providers",
+        name="surge_proxy_providers",
     ),
     path("shop/", views.purchase, name="purchase"),
     path("change/theme/", views.change_theme, name="change_theme"),

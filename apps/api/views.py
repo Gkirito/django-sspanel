@@ -198,7 +198,7 @@ class SurgeProxyProviderView(UserNodeBaseView):
             node_list = response_or_nodes
             providers = UserSubManager(user, node_list).get_surge_proxy_providers()
             return HttpResponse(
-                providers,
+                content=providers.encode("utf-8"),
                 content_type="text/plain; charset=utf-8",
             )
         else:
