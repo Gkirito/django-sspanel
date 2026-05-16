@@ -72,11 +72,12 @@ class UserSubManager:
             node_location_set.add(node.country)
 
         content = render_to_string(
-            "surge/safetunnel.toml",
+            "surge/safetunnel.ini",
             {
                 "sub_client": self.sub_client,
                 "provider_name": settings.SITE_TITLE,
                 "all_proxy_provider_url": all_proxy_provider_url,
+                "sub_link": user.sub_link + "&client=surge",
             },
         )
         response = HttpResponse(content, content_type="application/octet-stream")
