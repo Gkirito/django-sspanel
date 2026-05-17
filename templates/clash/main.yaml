@@ -29,13 +29,7 @@ dns:
   # fake-ip-ttl: 1
   nameserver-policy:
     '+.arpa': '10.0.0.1'
-    'rule-set:direct_domain_list':
-    - '114.114.114.114'
-    - https://doh.pub/dns-query
-    - https://120.53.53.53/dns-query
-    - https://1.12.12.12/dns-query
-    - https://doh.pub/dns-query
-    - https://dns.alidns.com/dns-query
+    'rule-set:direct_domain_list': 'https://dns.alidns.com/dns-query'
   nameserver:
     - https://dns.twnic.tw/dns-query
     - quic://223.5.5.5
