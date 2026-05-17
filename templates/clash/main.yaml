@@ -182,49 +182,49 @@ rule-providers:
     behavior: classical
     format: text
     interval: 43200
-    url: https://ruleset-mirror.skk.moe/Clash/non_ip/reject-no-drop.txt
+    url: https://ruleset.skk.moe/Clash/non_ip/reject-no-drop.txt
     path: ./sukkaw_ruleset/reject_non_ip_no_drop.txt
   reject_non_ip_drop:
     type: http
     behavior: classical
     format: text
     interval: 43200
-    url: https://ruleset-mirror.skk.moe/Clash/non_ip/reject-drop.txt
+    url: https://ruleset.skk.moe/Clash/non_ip/reject-drop.txt
     path: ./sukkaw_ruleset/reject_non_ip_drop.txt
   reject_non_ip:
     type: http
     behavior: classical
     format: text
     interval: 43200
-    url: https://ruleset-mirror.skk.moe/Clash/non_ip/reject.txt
+    url: https://ruleset.skk.moe/Clash/non_ip/reject.txt
     path: ./sukkaw_ruleset/reject_non_ip.txt
   reject_domainset:
     type: http
     behavior: domain
     format: text
     interval: 43200
-    url: https://ruleset-mirror.skk.moe/Clash/domainset/reject.txt
+    url: https://ruleset.skk.moe/Clash/domainset/reject.txt
     path: ./sukkaw_ruleset/reject_domainset.txt
   # reject_extra_domainset:
   #   type: http
   #   behavior: domain
   #   format: text
   #   interval: 43200
-  #   url: https://ruleset-mirror.skk.moe/Clash/domainset/reject_extra.txt
+  #   url: https://ruleset.skk.moe/Clash/domainset/reject_extra.txt
   #   path: ./sukkaw_ruleset/reject_domainset_extra.txt
   reject_ip:
     type: http
     behavior: classical
     format: text
     interval: 43200
-    url: https://ruleset-mirror.skk.moe/Clash/ip/reject.txt
+    url: https://ruleset.skk.moe/Clash/ip/reject.txt
     path: ./sukkaw_ruleset/reject_ip.txt
   sogouinput:
     type: http
     behavior: classical
     format: text
     interval: 43200
-    url: https://ruleset-mirror.skk.moe/Clash/non_ip/sogouinput.txt
+    url: https://ruleset.skk.moe/Clash/non_ip/sogouinput.txt
     path: ./sukkaw_ruleset/sogouinput.txt
 
   speedtest:
@@ -232,7 +232,7 @@ rule-providers:
     behavior: domain
     format: text
     interval: 43200
-    url: https://ruleset-mirror.skk.moe/Clash/domainset/speedtest.txt
+    url: https://ruleset.skk.moe/Clash/domainset/speedtest.txt
     path: ./sukkaw_ruleset/speedtest.txt
 
   cdn_domainset:
@@ -240,14 +240,14 @@ rule-providers:
     behavior: domain
     format: text
     interval: 43200
-    url: https://ruleset-mirror.skk.moe/Clash/domainset/cdn.txt
+    url: https://ruleset.skk.moe/Clash/domainset/cdn.txt
     path: ./sukkaw_ruleset/cdn_domainset.txt
   cdn_non_ip:
     type: http
     behavior: classical
     format: text
     interval: 43200
-    url: https://ruleset-mirror.skk.moe/Clash/non_ip/cdn.txt
+    url: https://ruleset.skk.moe/Clash/non_ip/cdn.txt
     path: ./sukkaw_ruleset/cdn_non_ip.txt
 
   stream_non_ip:
@@ -255,14 +255,14 @@ rule-providers:
     behavior: classical
     format: text
     interval: 43200
-    url: https://ruleset-mirror.skk.moe/Clash/non_ip/stream.txt
+    url: https://ruleset.skk.moe/Clash/non_ip/stream.txt
     path: ./sukkaw_ruleset/stream_non_ip.txt
   stream_ip:
     type: http
     behavior: classical
     format: text
     interval: 43200
-    url: https://ruleset-mirror.skk.moe/Clash/ip/stream.txt
+    url: https://ruleset.skk.moe/Clash/ip/stream.txt
     path: ./sukkaw_ruleset/stream_ip.txt
 
   ai_non_ip:
@@ -270,14 +270,14 @@ rule-providers:
     behavior: classical
     format: text
     interval: 43200
-    url: https://ruleset-mirror.skk.moe/Clash/non_ip/ai.txt
+    url: https://ruleset.skk.moe/Clash/non_ip/ai.txt
     path: ./sukkaw_ruleset/ai_non_ip.txt
   apple_intelligence_non_ip:
     type: http
     behavior: classical
     format: text
     interval: 43200
-    url: https://ruleset-mirror.skk.moe/Clash/non_ip/apple_intelligence.txt
+    url: https://ruleset.skk.moe/Clash/non_ip/apple_intelligence.txt
     path: ./sukkaw_ruleset/apple_intelligence_non_ip.txt
 
   telegram_non_ip:
@@ -285,14 +285,14 @@ rule-providers:
     behavior: classical
     format: text
     interval: 43200
-    url: https://ruleset-mirror.skk.moe/Clash/non_ip/telegram.txt
+    url: https://ruleset.skk.moe/Clash/non_ip/telegram.txt
     path: ./sukkaw_ruleset/telegram_non_ip.txt
   telegram_ip:
     type: http
     behavior: classical
     format: text
     interval: 43200
-    url: https://ruleset-mirror.skk.moe/Clash/ip/telegram.txt
+    url: https://ruleset.skk.moe/Clash/ip/telegram.txt
     path: ./sukkaw_ruleset/telegram_ip.txt
 
   apple_cdn:
@@ -300,21 +300,21 @@ rule-providers:
     behavior: domain
     format: text
     interval: 43200
-    url: https://ruleset-mirror.skk.moe/Clash/domainset/apple_cdn.txt
+    url: https://ruleset.skk.moe/Clash/domainset/apple_cdn.txt
     path: ./sukkaw_ruleset/apple_cdn.txt
   apple_services:
     type: http
     behavior: classical
     format: text
     interval: 43200
-    url: https://ruleset-mirror.skk.moe/Clash/non_ip/apple_services.txt
+    url: https://ruleset.skk.moe/Clash/non_ip/apple_services.txt
     path: ./sukkaw_ruleset/apple_services.txt
   apple_cn_non_ip:
     type: http
     behavior: classical
     format: text
     interval: 43200
-    url: https://ruleset-mirror.skk.moe/Clash/non_ip/apple_cn.txt
+    url: https://ruleset.skk.moe/Clash/non_ip/apple_cn.txt
     path: ./sukkaw_ruleset/apple_cn_non_ip.txt
 
   microsoft_cdn_non_ip:
@@ -322,28 +322,28 @@ rule-providers:
     behavior: classical
     format: text
     interval: 43200
-    url: https://ruleset-mirror.skk.moe/Clash/non_ip/microsoft_cdn.txt
+    url: https://ruleset.skk.moe/Clash/non_ip/microsoft_cdn.txt
     path: ./sukkaw_ruleset/microsoft_cdn_non_ip.txt
   microsoft_non_ip:
     type: http
     behavior: classical
     format: text
     interval: 43200
-    url: https://ruleset-mirror.skk.moe/Clash/non_ip/microsoft.txt
+    url: https://ruleset.skk.moe/Clash/non_ip/microsoft.txt
     path: ./sukkaw_ruleset/microsoft_non_ip.txt
   download_domainset:
     type: http
     behavior: domain
     format: text
     interval: 43200
-    url: https://ruleset-mirror.skk.moe/Clash/domainset/download.txt
+    url: https://ruleset.skk.moe/Clash/domainset/download.txt
     path: ./sukkaw_ruleset/download_domainset.txt
   download_non_ip:
     type: http
     behavior: classical
     format: text
     interval: 43200
-    url: https://ruleset-mirror.skk.moe/Clash/non_ip/download.txt
+    url: https://ruleset.skk.moe/Clash/non_ip/download.txt
     path: ./sukkaw_ruleset/download_non_ip.txt
 
   lan_non_ip:
@@ -351,14 +351,14 @@ rule-providers:
     behavior: classical
     format: text
     interval: 43200
-    url: https://ruleset-mirror.skk.moe/Clash/non_ip/lan.txt
+    url: https://ruleset.skk.moe/Clash/non_ip/lan.txt
     path: ./sukkaw_ruleset/lan_non_ip.txt
   lan_ip:
     type: http
     behavior: classical
     format: text
     interval: 43200
-    url: https://ruleset-mirror.skk.moe/Clash/ip/lan.txt
+    url: https://ruleset.skk.moe/Clash/ip/lan.txt
     path: ./sukkaw_ruleset/lan_ip.txt
 
   domestic_non_ip:
@@ -366,28 +366,28 @@ rule-providers:
     behavior: classical
     format: text
     interval: 43200
-    url: https://ruleset-mirror.skk.moe/Clash/non_ip/domestic.txt
+    url: https://ruleset.skk.moe/Clash/non_ip/domestic.txt
     path: ./sukkaw_ruleset/domestic_non_ip.txt
   direct_non_ip:
     type: http
     behavior: classical
     format: text
     interval: 43200
-    url: https://ruleset-mirror.skk.moe/Clash/non_ip/direct.txt
+    url: https://ruleset.skk.moe/Clash/non_ip/direct.txt
     path: ./sukkaw_ruleset/direct_non_ip.txt
   global_non_ip:
     type: http
     behavior: classical
     format: text
     interval: 43200
-    url: https://ruleset-mirror.skk.moe/Clash/non_ip/global.txt
+    url: https://ruleset.skk.moe/Clash/non_ip/global.txt
     path: ./sukkaw_ruleset/global_non_ip.txt
   domestic_ip:
     type: http
     behavior: classical
     format: text
     interval: 43200
-    url: https://ruleset-mirror.skk.moe/Clash/ip/domestic.txt
+    url: https://ruleset.skk.moe/Clash/ip/domestic.txt
     path: ./sukkaw_ruleset/domestic_ip.txt
 
   china_ip:
@@ -395,14 +395,14 @@ rule-providers:
     behavior: ipcidr
     format: text
     interval: 43200
-    url: https://ruleset-mirror.skk.moe/Clash/ip/china_ip.txt
+    url: https://ruleset.skk.moe/Clash/ip/china_ip.txt
     path: ./sukkaw_ruleset/china_ip.txt
   china_ip_ipv6:
     type: http
     behavior: ipcidr
     format: text
     interval: 43200
-    url: https://ruleset-mirror.skk.moe/Clash/ip/china_ip_ipv6.txt
+    url: https://ruleset.skk.moe/Clash/ip/china_ip_ipv6.txt
     path: ./sukkaw_ruleset/china_ipv6.txt
 
 
