@@ -60,7 +60,7 @@ class HysteriaTemplates:
             "proxy": {
                 "url": "https://www.apple.com",
                 "rewriteHost": True,
-                "insecure": True,
+                "insecure": False,
             },
         },
     }
@@ -762,6 +762,13 @@ class AnyTlsConfig(models.Model, resetPortMixin):
             "anytls_config": anytls_config,
             "sync_traffic_endpoint": node.api_endpoint,
             "log_level": node.ehco_log_level,
+            "acme": {
+                "domains": [node.server],
+                "email": settings.EMAIL_HOST_USER,
+                "ca": "letsencrypt",
+                "challenge": "dns",
+                "dns": {"name": "cloudflare"},
+            },
         }
         configs.update(node.get_ehco_server_config())
         return configs
@@ -820,6 +827,13 @@ class HysteriaConfig(models.Model, resetPortMixin):
             "hysteria_config": hysteria_config,
             "sync_traffic_endpoint": node.api_endpoint,
             "log_level": node.ehco_log_level,
+            "acme": {
+                "domains": [node.server],
+                "email": settings.EMAIL_HOST_USER,
+                "ca": "letsencrypt",
+                "challenge": "dns",
+                "dns": {"name": "cloudflare"},
+            },
         }
         configs.update(node.get_ehco_server_config())
         return configs
@@ -881,6 +895,13 @@ class TrojanConfig(models.Model, resetPortMixin):
             "xray_config": xray_config,
             "sync_traffic_endpoint": node.api_endpoint,
             "log_level": node.ehco_log_level,
+            "acme": {
+                "domains": [node.server],
+                "email": settings.EMAIL_HOST_USER,
+                "ca": "letsencrypt",
+                "challenge": "dns",
+                "dns": {"name": "cloudflare"},
+            },
         }
         configs.update(node.get_ehco_server_config())
         return configs
