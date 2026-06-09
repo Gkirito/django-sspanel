@@ -13,6 +13,8 @@ import pendulum
 from django.conf import settings
 from django.db import models, transaction
 from django.db.models import F
+from django.db.models.signals import m2m_changed
+from django.dispatch import receiver
 
 from apps import constants as c
 from apps import utils
@@ -1049,6 +1051,23 @@ class RelayRule(BaseModel):
     def __str__(self) -> str:
         return self.name
 
+    def generate_unique_name(self, base_name):
+        name = base_name[:64]
+        if not RelayRule.objects.filter(name=name).exclude(pk=self.pk).exists():
+            return name
+        suffix = 1
+        while True:
+            candidate = f"{base_name[:60]}-{suffix}"
+            if not RelayRule.objects.filter(name=candidate).exclude(pk=self.pk).exists():
+                return candidate
+            suffix += 1
+
+    def save(self, *args, **kwargs):
+        if not self.name and self.relay_node_id:
+            self._auto_generate_name = True
+            self.name = self.generate_unique_name(self.relay_node.name)
+        super().save(*args, **kwargs)
+
     @property
     def relay_host(self):
         return self.relay_node.server
@@ -1422,3 +1441,23 @@ class UserProxyNodeOccupancy(BaseModel):
             self.used_traffic >= self.total_traffic
             or self.end_time < utils.get_current_datetime()
         )
+
+
+@receiver(m2m_changed, sender=RelayRule.proxy_nodes.through)
+def update_relay_rule_name_on_m2m(sender, instance, action, reverse, **kwargs):
+    if reverse:
+        return
+    if action not in ("post_add", "post_remove", "post_clear"):
+        return
+    if not getattr(instance, "_auto_generate_name", False):
+        return
+
+    relay_name = instance.relay_node.name
+    proxy_names = sorted(instance.proxy_nodes.values_list("name", flat=True))
+    if proxy_names:
+        name = f"{relay_name}-{','.join(proxy_names)}"
+    else:
+        name = relay_name
+
+    unique_name = instance.generate_unique_name(name)
+    RelayRule.objects.filter(pk=instance.pk).update(name=unique_name)
