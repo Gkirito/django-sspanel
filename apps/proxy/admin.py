@@ -23,7 +23,7 @@ class SSConfigInline(admin.StackedInline):
 class TrojanConfigInline(admin.StackedInline):
     model = models.TrojanConfig
     verbose_name = "Trojan配置"
-    fields = ["proxy_node", "multi_user_port", "fallback_addr"]
+    fields = ["proxy_node", "multi_user_port", "fallback_addr", "cert_mode"]
 
 
 class ObfsPassWidget(forms.TextInput):
@@ -39,7 +39,14 @@ class ObfsPassWidget(forms.TextInput):
 class AnyTlsConfigInline(admin.StackedInline):
     model = models.AnyTlsConfig
     verbose_name = "Anytls配置"
-    fields = ["proxy_node", "multi_user_port", "padding_scheme"]
+    fields = [
+        "proxy_node",
+        "multi_user_port",
+        "padding_mode",
+        "padding_rotation_interval",
+        "padding_scheme",
+        "cert_mode",
+    ]
 
 
 class HysteriaConfigInline(admin.StackedInline):
@@ -49,6 +56,7 @@ class HysteriaConfigInline(admin.StackedInline):
         "proxy_node",
         "obfs_pass",
         "multi_user_port",
+        "cert_mode",
         "port_hop_min",
         "port_hop_max",
         "port_hop_interval",

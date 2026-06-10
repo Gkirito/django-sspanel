@@ -11,6 +11,8 @@ from urllib.parse import quote, urlencode
 
 import pendulum
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.db.models import F
 from django.db.models.signals import m2m_changed
@@ -30,6 +32,14 @@ class XRayTags:
     SSRProxyTag = "ssr_proxy"
     VmessProxyTag = "vmess_proxy"
     VlessProxyTag = "vless_proxy"
+
+
+CERT_MODE_ACME = "acme"
+CERT_MODE_SELF_SIGNED = "self_signed"
+CERT_MODE_CHOICES = [
+    (CERT_MODE_ACME, "ACME 自动签发"),
+    (CERT_MODE_SELF_SIGNED, "自签名证书"),
+]
 
 
 # Use Python's time module to derive nanoseconds per second for hysteria configs.
@@ -743,7 +753,33 @@ class AnyTlsConfig(models.Model, resetPortMixin):
         "多用户端口", help_text="单端口多用户端口", null=True, blank=True
     )
     padding_scheme = models.CharField(
-        "padding 方案", max_length=64, blank=True, null=True
+        "padding 方案", max_length=2048, blank=True, null=True
+    )
+    PADDING_MODE_OFF = "off"
+    PADDING_MODE_MANUAL = "manual"
+    PADDING_MODE_AUTO = "auto"
+    PADDING_MODE_CHOICES = [
+        (PADDING_MODE_OFF, "关闭"),
+        (PADDING_MODE_MANUAL, "手动填写"),
+        (PADDING_MODE_AUTO, "自动轮换"),
+    ]
+    padding_mode = models.CharField(
+        "padding模式",
+        max_length=16,
+        choices=PADDING_MODE_CHOICES,
+        default=PADDING_MODE_OFF,
+    )
+    padding_rotation_interval = models.PositiveIntegerField(
+        "轮换间隔(小时)",
+        default=1,
+        validators=[MinValueValidator(1), MaxValueValidator(168)],
+        help_text="自动轮换模式下每隔多少小时生成新的padding方案，需 ≥ 节点配置重载间隔",
+    )
+    cert_mode = models.CharField(
+        "证书模式",
+        max_length=16,
+        choices=CERT_MODE_CHOICES,
+        default=CERT_MODE_ACME,
     )
 
     class Meta:
@@ -753,10 +789,22 @@ class AnyTlsConfig(models.Model, resetPortMixin):
     def __str__(self) -> str:
         return f"{self.proxy_node.__str__()}-配置"
 
+    @property
+    def effective_padding_scheme(self):
+        if self.padding_mode == self.PADDING_MODE_OFF:
+            return None
+        if self.padding_mode == self.PADDING_MODE_MANUAL:
+            return self.padding_scheme
+        if self.padding_mode == self.PADDING_MODE_AUTO:
+            from apps.proxy.padding_scheme import PaddingSchemeGenerator
+
+            return PaddingSchemeGenerator().generate(self.padding_rotation_interval)
+        return None
+
     def to_node_config(self, node: ProxyNode):
         anytls_config = AnyTlsTemplates.gen_base_config(
             self.multi_user_port,
-            self.padding_scheme,
+            self.effective_padding_scheme,
             node.enable_udp,
         )
         configs = {
@@ -764,16 +812,29 @@ class AnyTlsConfig(models.Model, resetPortMixin):
             "anytls_config": anytls_config,
             "sync_traffic_endpoint": node.api_endpoint,
             "log_level": node.ehco_log_level,
-            "acme": {
+        }
+        configs.update(node.get_ehco_server_config())
+        if self.cert_mode == CERT_MODE_ACME:
+            configs["acme"] = {
                 "domains": [node.server],
                 "email": settings.EMAIL_HOST_USER,
                 "ca": "letsencrypt",
                 "challenge": "dns",
                 "dns": {"name": "cloudflare"},
-            },
-        }
-        configs.update(node.get_ehco_server_config())
+            }
         return configs
+
+    def clean(self):
+        if self.padding_mode != self.PADDING_MODE_AUTO:
+            return
+        node = self.proxy_node
+        if node and node.ehco_reload_interval:
+            node_interval_hours = node.ehco_reload_interval / 3600
+            if self.padding_rotation_interval < node_interval_hours:
+                raise ValidationError(
+                    f"轮换间隔({self.padding_rotation_interval}h)需 ≥ "
+                    f"节点配置重载间隔({node_interval_hours:.1f}h)"
+                )
 
     def to_user_config(self, node: ProxyNode, user: User):
         have_shared_traffic = user.total_traffic > (
@@ -810,6 +871,12 @@ class HysteriaConfig(models.Model, resetPortMixin):
         "多用户端口", help_text="单端口多用户端口", null=True, blank=True
     )
     obfs_pass = models.CharField("混淆方式", max_length=64, blank=True, null=True)
+    cert_mode = models.CharField(
+        "证书模式",
+        max_length=16,
+        choices=CERT_MODE_CHOICES,
+        default=CERT_MODE_ACME,
+    )
 
     class Meta:
         verbose_name = "Hysteria配置"
@@ -829,15 +896,16 @@ class HysteriaConfig(models.Model, resetPortMixin):
             "hysteria_config": hysteria_config,
             "sync_traffic_endpoint": node.api_endpoint,
             "log_level": node.ehco_log_level,
-            "acme": {
+        }
+        configs.update(node.get_ehco_server_config())
+        if self.cert_mode == CERT_MODE_ACME:
+            configs["acme"] = {
                 "domains": [node.server],
                 "email": settings.EMAIL_HOST_USER,
                 "ca": "letsencrypt",
                 "challenge": "dns",
                 "dns": {"name": "cloudflare"},
-            },
-        }
-        configs.update(node.get_ehco_server_config())
+            }
         return configs
 
     def to_user_config(self, node: ProxyNode, user: User):
@@ -872,6 +940,12 @@ class TrojanConfig(models.Model, resetPortMixin):
     multi_user_port = models.IntegerField(
         "多用户端口", help_text="单端口多用户端口", null=True, blank=True
     )
+    cert_mode = models.CharField(
+        "证书模式",
+        max_length=16,
+        choices=CERT_MODE_CHOICES,
+        default=CERT_MODE_ACME,
+    )
 
     class Meta:
         verbose_name = "SS配置"
@@ -897,15 +971,16 @@ class TrojanConfig(models.Model, resetPortMixin):
             "xray_config": xray_config,
             "sync_traffic_endpoint": node.api_endpoint,
             "log_level": node.ehco_log_level,
-            "acme": {
+        }
+        configs.update(node.get_ehco_server_config())
+        if self.cert_mode == CERT_MODE_ACME:
+            configs["acme"] = {
                 "domains": [node.server],
                 "email": settings.EMAIL_HOST_USER,
                 "ca": "letsencrypt",
                 "challenge": "dns",
                 "dns": {"name": "cloudflare"},
-            },
-        }
-        configs.update(node.get_ehco_server_config())
+            }
         return configs
 
     def to_user_config(self, node: ProxyNode, user: User):
