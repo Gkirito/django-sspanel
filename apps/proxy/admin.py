@@ -153,22 +153,33 @@ class ProxyNodeAdmin(admin.ModelAdmin):
             },
         ),
         (
-            "Xray and Ehco Configuration",
+            "Xray Configuration",
             {
+                "classes": ("xray-fieldset",),
                 "fields": (
                     "xray_grpc_port",
+                )
+            },
+        ),
+        (
+            "Agent Configuration",
+            {
+                "fields": (
                     "ehco_listen_host",
                     "ehco_listen_port",
                     "ehco_listen_type",
                     "ehco_transport_type",
                     "ehco_web_port",
                     "ehco_web_token",
-                    "ehco_log_level",
-                    "ehco_reload_interval",
+                    "log_level",
+                    "reload_interval",
                 )
             },
         ),
     )
+
+    class Media:
+        js = ("proxy/dynamic_inlines.js",)
 
     def get_form(self, request, obj=None, **kwargs):
         if obj:

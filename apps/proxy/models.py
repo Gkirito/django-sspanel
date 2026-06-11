@@ -281,10 +281,10 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
     ehco_web_token = models.CharField(
         "隧道web token", max_length=64, blank=True, null=True
     )
-    ehco_log_level = models.CharField(
+    log_level = models.CharField(
         "隧道日志等级", max_length=64, default="info", choices=EHCO_LOG_LEVELS
     )
-    ehco_reload_interval = models.IntegerField("配置重载间隔", default=0)
+    reload_interval = models.IntegerField("配置重载间隔", default=30)
 
     upload_bandwidth_bytes = models.BigIntegerField("上传带宽", default=0)
     current_used_upload_bandwidth_bytes = models.BigIntegerField(
@@ -403,8 +403,6 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
             return {
                 "web_port": self.ehco_web_port,
                 "web_token": self.ehco_web_token,
-                "log_level": self.ehco_log_level,
-                "reload_interval": self.ehco_reload_interval,
                 "relay_configs": [
                     {
                         "listen": f"{self.ehco_listen_host}:{self.ehco_listen_port}",
@@ -704,7 +702,7 @@ class SSConfig(models.Model, resetPortMixin):
     def to_node_config(self, node: ProxyNode):
         xray_config = XRayTemplates.gen_base_config(
             node.xray_grpc_port,
-            node.ehco_log_level,
+            node.log_level,
         )
         ss_config = self
         ss_inbound = deepcopy(XRayTemplates.SS_INBOUND)
@@ -716,8 +714,9 @@ class SSConfig(models.Model, resetPortMixin):
         configs = {
             "xray_config": xray_config,
             "sync_traffic_endpoint": node.api_endpoint,
-            "log_level": node.ehco_log_level,
+            "log_level": node.log_level,
         }
+        configs["reload_interval"] = node.reload_interval
         configs.update(node.get_ehco_server_config())
         return configs
 
@@ -811,8 +810,9 @@ class AnyTlsConfig(models.Model, resetPortMixin):
             "users": [],
             "anytls_config": anytls_config,
             "sync_traffic_endpoint": node.api_endpoint,
-            "log_level": node.ehco_log_level,
+            "log_level": node.log_level,
         }
+        configs["reload_interval"] = node.reload_interval
         configs.update(node.get_ehco_server_config())
         if self.cert_mode == CERT_MODE_ACME:
             configs["acme"] = {
@@ -828,8 +828,8 @@ class AnyTlsConfig(models.Model, resetPortMixin):
         if self.padding_mode != self.PADDING_MODE_AUTO:
             return
         node = self.proxy_node
-        if node and node.ehco_reload_interval:
-            node_interval_hours = node.ehco_reload_interval / 3600
+        if node and node.reload_interval:
+            node_interval_hours = node.reload_interval / 3600
             if self.padding_rotation_interval < node_interval_hours:
                 raise ValidationError(
                     f"轮换间隔({self.padding_rotation_interval}h)需 ≥ "
@@ -895,8 +895,9 @@ class HysteriaConfig(models.Model, resetPortMixin):
             "users": [],
             "hysteria_config": hysteria_config,
             "sync_traffic_endpoint": node.api_endpoint,
-            "log_level": node.ehco_log_level,
+            "log_level": node.log_level,
         }
+        configs["reload_interval"] = node.reload_interval
         configs.update(node.get_ehco_server_config())
         if self.cert_mode == CERT_MODE_ACME:
             configs["acme"] = {
@@ -957,7 +958,7 @@ class TrojanConfig(models.Model, resetPortMixin):
     def to_node_config(self, node: ProxyNode):
         xray_config = XRayTemplates.gen_base_config(
             node.xray_grpc_port,
-            node.ehco_log_level,
+            node.log_level,
         )
         inbound = deepcopy(XRayTemplates.TROJAN_INBOUND)
         inbound["listen"] = node.get_inbound_listen_host()
@@ -970,8 +971,9 @@ class TrojanConfig(models.Model, resetPortMixin):
             "users": [],
             "xray_config": xray_config,
             "sync_traffic_endpoint": node.api_endpoint,
-            "log_level": node.ehco_log_level,
+            "log_level": node.log_level,
         }
+        configs["reload_interval"] = node.reload_interval
         configs.update(node.get_ehco_server_config())
         if self.cert_mode == CERT_MODE_ACME:
             configs["acme"] = {
