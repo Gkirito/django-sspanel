@@ -107,7 +107,7 @@ apps/Alipay_pub.pem
 #PyCharm
 .idea/
 
-static/
+/static/
 
 *.log
 go.mod
