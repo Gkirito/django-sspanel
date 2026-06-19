@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib import admin, messages
 from django.db.models import F
+from django.forms.models import BaseInlineFormSet
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 
@@ -285,18 +286,31 @@ class ProxyNodeAdmin(admin.ModelAdmin):
     duplicate.type = "warning"
 
 
+class RelayRuleFormSet(BaseInlineFormSet):
+    """Pre-assign unique placeholder names to avoid duplicate validation errors."""
+
+    def clean(self):
+        for i, form in enumerate(self.forms):
+            if form.is_valid() and not form.cleaned_data.get("name"):
+                placeholder = f"__new_rule_{i}__"
+                form.cleaned_data["name"] = placeholder
+                form.instance.name = placeholder
+                form.instance._placeholder_name = True
+        super().clean()
+
+
 class RelayRuleInline(admin.TabularInline):
     model = models.RelayRule
     verbose_name = "中转规则配置"
     extra = 0
     fields = [
         "name",
-        "relay_node",
         "relay_port",
         "proxy_nodes",
         "listen_type",
         "transport_type",
     ]
+    formset = RelayRuleFormSet
 
 
 class RelayNodeAdmin(admin.ModelAdmin):

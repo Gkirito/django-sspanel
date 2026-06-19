@@ -1160,7 +1160,9 @@ class RelayRule(BaseModel):
             suffix += 1
 
     def save(self, *args, **kwargs):
-        if not self.name and self.relay_node_id:
+        if self.relay_node_id and (
+            not self.name or getattr(self, "_placeholder_name", False)
+        ):
             self._auto_generate_name = True
             self.name = self.generate_unique_name(self.relay_node.name)
         super().save(*args, **kwargs)
