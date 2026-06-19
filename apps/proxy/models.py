@@ -11,8 +11,8 @@ from urllib.parse import quote, urlencode
 
 import pendulum
 from django.conf import settings
-from django.core.validators import MaxValueValidator, MinValueValidator
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models, transaction
 from django.db.models import F
 from django.db.models.signals import m2m_changed
@@ -445,10 +445,10 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
             code = f"{self.ss_config.method}:{user.proxy_password}@{host}:{port}"
             b64_code = base64.urlsafe_b64encode(code.encode()).decode()
         elif self.node_type == self.NODE_TYPE_TROJAN:
-            code = f"{user.proxy_password}@{host}:{port}?allowInsecure=1&udp={udp}"
+            code = f"{user.proxy_password}@{host}:{port}?allowInsecure={0 if self.trojan_config.cert_mode == CERT_MODE_ACME else 1}&udp={udp}"
             b64_code = code  # trojan don't need base64 encode
         elif self.node_type == self.NODE_TYPE_HYSTERIA:
-            code = f"{user.proxy_password}@{host}:{port}?insecure=1"
+            code = f"{user.proxy_password}@{host}:{port}?insecure={0 if self.hysteria_config.cert_mode == CERT_MODE_ACME else 1}"
             if self.hysteria_config.obfs_pass:
                 code += (
                     f"&obfs=salamander&obfs-password={self.hysteria_config.obfs_pass}"
@@ -461,7 +461,7 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
                 code += f"&mport={self.hysteria_config.port_hop_min}-{self.hysteria_config.port_hop_max}"
             b64_code = code  # hysteria don't need base64 encode
         elif self.node_type == self.NODE_TYPE_ANYTLS:
-            code = f"{user.proxy_password}@{host}:{port}?insecure=1&udp=1&peer={self.server}"
+            code = f"{user.proxy_password}@{host}:{port}?insecure={0 if self.anytls_config.cert_mode == CERT_MODE_ACME else 1}&udp=1&peer={self.server}"
             b64_code = code  # anytls don't need base64 encode
         return f"{self.node_type}://{b64_code}#{quote(remark)}"
 
@@ -477,11 +477,14 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
             remark = self.get_display_remark()
             udp = self.enable_udp
         extr = ""
+        skip_cert_verify = False
         if self.node_type == self.NODE_TYPE_SS:
             extr = f"encrypt-method='{self.ss_config.method}',udp-relay=true"
         # elif self.node_type == self.NODE_TYPE_TROJAN:
         #     code = f"{user.proxy_password}@{host}:{port}?allowInsecure=1&udp={udp}"
         elif self.node_type == self.NODE_TYPE_HYSTERIA:
+            if self.hysteria_config.cert_mode == CERT_MODE_SELF_SIGNED:
+                skip_cert_verify = True
             if self.hysteria_config.obfs_pass:
                 extr = f"salamander-password='{self.hysteria_config.obfs_pass}'"
             if (
@@ -492,10 +495,13 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
                 if extr != "":
                     extr += ","
                 extr += f"port-hopping='{self.hysteria_config.port_hop_min}-{self.hysteria_config.port_hop_max}'"
+        elif self.node_type == self.NODE_TYPE_ANYTLS:
+            if self.anytls_config.cert_mode == CERT_MODE_SELF_SIGNED:
+                skip_cert_verify = True
         if extr:
-            return f"{remark}={self.node_type},{host},{port},password='{user.proxy_password}',sni='{self.server}',skip-cert-verify=true,tfo=false,{extr}"
+            return f"{remark}={self.node_type},{host},{port},password='{user.proxy_password}',sni='{self.server}',skip-cert-verify={str(skip_cert_verify).lower()},tfo=false,{extr}"
         else:
-            return f"{remark}={self.node_type},{host},{port},password='{user.proxy_password}',sni='{self.server}',skip-cert-verify=true,tfo=false"
+            return f"{remark}={self.node_type},{host},{port},password='{user.proxy_password}',sni='{self.server}',skip-cert-verify={str(skip_cert_verify).lower()},tfo=false"
 
     def get_user_clash_config(self, user, relay_rule=None):
         if relay_rule:
@@ -520,7 +526,9 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
         if self.node_type == self.NODE_TYPE_SS:
             config["cipher"] = self.ss_config.method
         if self.node_type == self.NODE_TYPE_TROJAN:
-            config["skip-cert-verify"] = True
+            config["skip-cert-verify"] = (
+                True if self.trojan_config.cert_mode == CERT_MODE_SELF_SIGNED else False
+            )
         if self.node_type == self.NODE_TYPE_HYSTERIA:
             if (
                 self.hysteria_config.port_hop_min != self.hysteria_config.port_hop_max
@@ -530,13 +538,19 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
                 config["ports"] = (
                     f"{self.hysteria_config.port_hop_min}-{self.hysteria_config.port_hop_max}"
                 )
-            config["skip-cert-verify"] = True
+            config["skip-cert-verify"] = (
+                True
+                if self.hysteria_config.cert_mode == CERT_MODE_SELF_SIGNED
+                else False
+            )
             config["sni"] = self.server
             if self.hysteria_config.obfs_pass:
                 config["obfs"] = "salamander"
                 config["obfs-password"] = self.hysteria_config.obfs_pass
         if self.node_type == self.NODE_TYPE_ANYTLS:
-            config["skip-cert-verify"] = True
+            config["skip-cert-verify"] = (
+                True if self.anytls_config.cert_mode == CERT_MODE_SELF_SIGNED else False
+            )
             config["udp"] = True
             config["alpn"] = ["h2"]
             config["sni"] = self.server
@@ -563,6 +577,8 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
             return self.trojan_config.reset_random_multi_user_port()
         elif self.node_type == self.NODE_TYPE_HYSTERIA:
             return self.hysteria_config.reset_random_multi_user_port()
+        elif self.node_type == self.NODE_TYPE_ANYTLS:
+            return self.anytls_config.reset_random_multi_user_port()
 
     @property
     def human_total_traffic(self):
@@ -1135,7 +1151,11 @@ class RelayRule(BaseModel):
         suffix = 1
         while True:
             candidate = f"{base_name[:60]}-{suffix}"
-            if not RelayRule.objects.filter(name=candidate).exclude(pk=self.pk).exists():
+            if (
+                not RelayRule.objects.filter(name=candidate)
+                .exclude(pk=self.pk)
+                .exists()
+            ):
                 return candidate
             suffix += 1
 
