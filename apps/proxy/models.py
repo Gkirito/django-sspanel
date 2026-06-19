@@ -445,10 +445,10 @@ class ProxyNode(BaseNodeModel, SequenceMixin):
             code = f"{self.ss_config.method}:{user.proxy_password}@{host}:{port}"
             b64_code = base64.urlsafe_b64encode(code.encode()).decode()
         elif self.node_type == self.NODE_TYPE_TROJAN:
-            code = f"{user.proxy_password}@{host}:{port}?allowInsecure={0 if self.trojan_config.cert_mode == CERT_MODE_ACME else 1}&udp={udp}"
+            code = f"{user.proxy_password}@{host}:{port}?allowInsecure={0 if self.trojan_config.cert_mode == CERT_MODE_ACME else 1}&udp={udp}&peer={self.server}"
             b64_code = code  # trojan don't need base64 encode
         elif self.node_type == self.NODE_TYPE_HYSTERIA:
-            code = f"{user.proxy_password}@{host}:{port}?insecure={0 if self.hysteria_config.cert_mode == CERT_MODE_ACME else 1}"
+            code = f"{user.proxy_password}@{host}:{port}?insecure={0 if self.hysteria_config.cert_mode == CERT_MODE_ACME else 1}&peer={self.server}"
             if self.hysteria_config.obfs_pass:
                 code += (
                     f"&obfs=salamander&obfs-password={self.hysteria_config.obfs_pass}"
