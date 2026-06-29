@@ -70,7 +70,7 @@ class HysteriaTemplates:
         "masquerade": {
             "type": "proxy",
             "proxy": {
-                "url": "https://www.apple.com",
+                "url": settings.SITE_HOST,
                 "rewriteHost": True,
                 "insecure": False,
             },
